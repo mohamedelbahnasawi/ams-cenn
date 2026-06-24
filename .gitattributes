@@ -1,0 +1,4 @@
+*.ipynb merge=nbdev-merge
+nbs/** linguist-documentation
+*.sh text eol=lf
+*.sbatch text eol=lf
