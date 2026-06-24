@@ -1,0 +1,28 @@
+name: smoke
+
+# Minimal smoke test: install the package and construct the AMS-CeNN model.
+# Proves the repository is pip-installable and the model imports and builds.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  install-import:
+    name: install + construct AMS-CeNN
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package
+        run: pip install -e .
+      - name: Import + construct AMS-CeNN
+        run: python -c "from neuralforecast.models import CeNN; m=CeNN(h=8,input_size=16,n_series=3,hidden_dim=8,K=2,adaptive_tau=True,multiscale_mode='parallel_ensemble',linear_skip=True); print('AMS-CeNN OK:', sum(p.numel() for p in m.parameters()), 'params')"
