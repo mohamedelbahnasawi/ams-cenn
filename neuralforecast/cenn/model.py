@@ -1,4 +1,5 @@
 import math
+import os
 from typing import List, Optional, Tuple
 
 import torch
@@ -66,6 +67,52 @@ class AdaptiveTauGate(nn.Module):
             self.weight.unsqueeze(0).unsqueeze(-1) * u
             + self.bias.unsqueeze(0).unsqueeze(-1)
         )
+        return self.alpha_min + (self.alpha_max - self.alpha_min) * s
+
+
+# ---------------------------------------------------------------------------
+# Context/volatility-aware tau gate (optional variant)
+# ---------------------------------------------------------------------------
+class ContextTauGate(nn.Module):
+    """Input-conditioned gate that can perceive local non-stationarity.
+
+    The pointwise AdaptiveTauGate computes alpha_c(t)=f(u_c(t)) from the instantaneous latent value
+    only, and empirically converges to a near-uniform retention. This variant gives alpha_c(t)
+    (i) a depthwise LOCAL window of u (a conv over time) and (ii) an explicit local-volatility
+    feature, so it can raise retention in noisy/changing regions and trust the drive in clean ones.
+    Still bounded in [alpha_min, alpha_max], so the per-step contraction guarantee is unchanged.
+    Opt-in via CENN_GATE_TYPE=context (unset -> the default pointwise gate); the context window and
+    the volatility warm-start are tunable via CENN_GATE_CTX / CENN_GATE_WVOL.
+    """
+
+    def __init__(self, channels: int, alpha_init: float = 0.9,
+                 alpha_min: float = 0.5, alpha_max: float = 0.99,
+                 ctx: int = None, w_vol_init: float = None):
+        super().__init__()
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        ctx = int(os.environ.get("CENN_GATE_CTX", ctx if ctx is not None else 15))
+        w_vol_init = float(os.environ.get("CENN_GATE_WVOL", w_vol_init if w_vol_init is not None else 1.0))
+        self.ctx = ctx
+        pad = ctx // 2
+        self.ctx_conv = nn.Conv1d(channels, channels, kernel_size=ctx,
+                                  padding=pad, groups=channels)   # depthwise local context
+        self.w_vol = nn.Parameter(torch.full((channels,), w_vol_init))  # per-channel volatility weight
+        frac = (alpha_init - alpha_min) / (alpha_max - alpha_min)
+        frac = min(max(frac, 1e-4), 1.0 - 1e-4)
+        bias_init = math.log(frac) - math.log(1.0 - frac)
+        self.bias = nn.Parameter(torch.full((channels,), bias_init))
+        nn.init.zeros_(self.ctx_conv.weight)
+        nn.init.zeros_(self.ctx_conv.bias)
+
+    def forward(self, u: torch.Tensor) -> torch.Tensor:
+        """u : [B, C, L]. Returns alpha : [B, C, L] bounded in [alpha_min, alpha_max]."""
+        pad = self.ctx // 2
+        du = (u - F.pad(u, (1, 0))[:, :, :-1]).abs()                       # local roughness |Δu|
+        vol = F.avg_pool1d(du, kernel_size=self.ctx, stride=1, padding=pad)  # smoothed -> volatility
+        s = torch.sigmoid(self.ctx_conv(u)
+                          + self.w_vol.view(1, -1, 1) * vol
+                          + self.bias.view(1, -1, 1))
         return self.alpha_min + (self.alpha_max - self.alpha_min) * s
 
 
@@ -211,9 +258,13 @@ class CeNNCell1D(nn.Module):
         causal_mask[:center + 1] = 1.0
         self.register_buffer('causal_mask', causal_mask.view(1, 1, -1))
 
-        # --- C1: Adaptive tau gate OR fixed alpha (both bounded in [alpha_min, alpha_max]) ---
+        # --- C1: bounded tau gate OR fixed alpha (both bounded in [alpha_min, alpha_max]) ---
         if adaptive_tau:
-            self.tau_gate = AdaptiveTauGate(
+            # CENN_GATE_TYPE=context swaps in the context/volatility-aware gate variant;
+            # unset -> the default pointwise gate (behavior identical).
+            _gate_cls = (ContextTauGate if os.environ.get("CENN_GATE_TYPE") == "context"
+                         else AdaptiveTauGate)
+            self.tau_gate = _gate_cls(
                 channels, alpha_init=alpha_init,
                 alpha_min=alpha_min, alpha_max=alpha_max,
             )
