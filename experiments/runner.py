@@ -282,6 +282,12 @@ VARIANT_SPECS = {
     # headline pillar). K set via _VARIANT_K below; separate name from the K=8 gate cells of
     # C1C2-Skip (which serve as the K8 reference for the K-neutrality check).
     "C1C2-Skip-K2":               {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True},
+    # Cross-channel interaction variants on the headline architecture (skip + multiscale, K=2): test
+    # whether explicit cross-series coupling helps the high-cardinality regime (Electricity, Traffic).
+    "C1C2-Skip-K2-STAR":          {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "star"},      # O(V) STAR aggregate-redistribute
+    "C1C2-Skip-K2-Pointwise":     {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "pointwise_mix": True},    # latent 1x1 channel mix
+    "C1C2-Skip-K2-VarMix":        {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "varmix"},    # dense O(V^2) V x V mix
+    "C1C2-Skip-K2-G4":            {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "channel_groups": 4},      # grouped conv over hidden
     # CONTROL for "isn't this just a linear skip + ANY nonlinear block?": swap the CeNN dynamics for
     # a generic MLP-Mixer trunk, holding input_proj + head + zero-init skip constant. K/integrator/
     # multiscale are inherited but IGNORED by the MLP trunk (logged cenn_K is meaningless here). A tie
@@ -324,6 +330,8 @@ _VARIANT_K = {
     "K2-Euler": 2, "K2-Heun": 2,
     "K2-C2Ensemble": 2,   # confirmatory: headline architecture at K=2
     "C1C2-Skip-K2": 2,    # NEW HEADLINE: linear-skip at K=2 (4x cheaper, accuracy-neutral)
+    "C1C2-Skip-K2-STAR": 2, "C1C2-Skip-K2-Pointwise": 2,  # cross-channel variants on headline (K=2)
+    "C1C2-Skip-K2-VarMix": 2, "C1C2-Skip-K2-G4": 2,
     "C1C2-Skip-ExpEuler-K2": 2,   # integrator-gap closer: headline arch, exp_euler @ K=2
     "C1C2-Skip-K4": 4,    # K=4 midpoint for the headline-native K-curve {K8,K4,K2}
     "CAP-Skip-H128": 2, "CAP-Skip-H256": 2, "CAP-Skip-H512": 2,   # headline arch (K=2) at higher capacity

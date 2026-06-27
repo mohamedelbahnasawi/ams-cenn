@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Inc-3 smoke gate: integrator selector + parallel multi-scale ensemble (MA-A3).
+"""Smoke gate: integrator selector + parallel multi-scale ensemble.
 
 Run with the project venv:
     .venv/Scripts/python.exe experiments/smoke_inc3.py
