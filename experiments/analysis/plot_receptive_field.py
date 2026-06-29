@@ -27,7 +27,7 @@ for i, (lab, span, col) in zip(y, rows):
 ax.set_yticks(list(y))
 ax.set_yticklabels([r[0] for r in rows], fontsize=9)
 ax.invert_yaxis()
-ax.set_xlim(0, L * 1.12)
+ax.set_xlim(0, L * 1.32)  # headroom so the "512 steps" label + "full lookback" note stay inside the axes
 ax.set_xlabel("effective receptive field over the $L=512$ lookback (steps)", fontsize=9)
 ax.axvline(L, color="0.6", lw=0.8, ls=":")
 ax.text(L, len(rows) - 0.4, "  full lookback $L=512$", fontsize=7.5, color="0.4", va="top")
