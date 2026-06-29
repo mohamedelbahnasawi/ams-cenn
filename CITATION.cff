@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: >-
   If you use this software, please cite it using the metadata below. The
-  associated paper is under review at IEEE Access (2026); please cite it as
+  associated paper is to be submitted to IEEE Access (2026); please cite it as
   well once published.
 title: >-
   AMS-CeNN: Robust, Stability-Certified Multi-Scale Cellular Neural Networks
