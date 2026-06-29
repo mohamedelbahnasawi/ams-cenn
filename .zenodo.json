@@ -1,0 +1,23 @@
+{
+  "title": "AMS-CeNN: Robust, Stability-Certified Multi-Scale Cellular Neural Networks for Long-Horizon Time Series Forecasting",
+  "description": "Reference implementation and experiment harness for AMS-CeNN, a parameter-auditable, stability-certified multi-scale Cellular Neural Network for long-horizon multivariate time-series forecasting. Integrated into a pinned fork of NeuralForecast (v3.1.9); includes the model, the benchmark runner, and the analysis/figure scripts that reproduce the paper's tables and figures. Associated paper under review at IEEE Access (2026).",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "version": "1.0.0",
+  "keywords": [
+    "cellular neural networks",
+    "time series forecasting",
+    "long-horizon forecasting",
+    "nonlinear dynamical systems",
+    "stability analysis",
+    "robustness"
+  ],
+  "creators": [
+    { "name": "El Bahnasawi, Mohamed", "orcid": "0000-0001-9600-3182", "affiliation": "University of Klagenfurt, Austria" },
+    { "name": "Zekaj, Jonida", "orcid": "0009-0008-7838-3669", "affiliation": "University of Klagenfurt, Austria" },
+    { "name": "Dubatouka, Palina", "orcid": "0009-0000-0216-754X", "affiliation": "University of Klagenfurt, Austria" },
+    { "name": "Gebser, Martin", "orcid": "0000-0002-8010-4752", "affiliation": "University of Klagenfurt, Austria" },
+    { "name": "Kyamakya, Kyandoghere", "orcid": "0000-0003-0773-9476", "affiliation": "University of Klagenfurt, Austria" }
+  ]
+}

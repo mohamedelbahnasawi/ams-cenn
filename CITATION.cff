@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata below. The
+  associated paper is under review at IEEE Access (2026); please cite it as
+  well once published.
+title: >-
+  AMS-CeNN: Robust, Stability-Certified Multi-Scale Cellular Neural Networks
+  for Long-Horizon Time Series Forecasting
+type: software
+version: 1.0.0
+date-released: "2026-06-29"
+license: Apache-2.0
+repository-code: "https://github.com/mohamedelbahnasawi/ams-cenn"
+url: "https://github.com/mohamedelbahnasawi/ams-cenn"
+authors:
+  - family-names: "El Bahnasawi"
+    given-names: "Mohamed"
+    orcid: "https://orcid.org/0000-0001-9600-3182"
+    affiliation: "University of Klagenfurt, Austria"
+  - family-names: "Zekaj"
+    given-names: "Jonida"
+    orcid: "https://orcid.org/0009-0008-7838-3669"
+    affiliation: "University of Klagenfurt, Austria"
+  - family-names: "Dubatouka"
+    given-names: "Palina"
+    orcid: "https://orcid.org/0009-0000-0216-754X"
+    affiliation: "University of Klagenfurt, Austria"
+  - family-names: "Gebser"
+    given-names: "Martin"
+    orcid: "https://orcid.org/0000-0002-8010-4752"
+    affiliation: "University of Klagenfurt, Austria"
+  - family-names: "Kyamakya"
+    given-names: "Kyandoghere"
+    orcid: "https://orcid.org/0000-0003-0773-9476"
+    affiliation: "University of Klagenfurt, Austria"
+keywords:
+  - cellular neural networks
+  - time series forecasting
+  - long-horizon forecasting
+  - nonlinear dynamical systems
+  - stability analysis
+  - robustness
