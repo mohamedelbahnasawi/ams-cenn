@@ -1,10 +1,19 @@
-"""Add published baseline results from original papers.
+"""Record external (literature) baseline numbers for the appendix reproduction cross-check.
 
-These are used for models where we don't re-run experiments
-(PatchTST, iTransformer, DLinear, NHITS, TiDE).
+IMPORTANT: every baseline in the paper is RE-RUN under our common protocol (see runner.py);
+its main-table numbers come from experiments/results/ (84 JSONs each = 7 datasets x 4 horizons
+x 3 seeds), NOT from this script. This script only stores external published numbers in
+experiments/published/ as an appendix reproduction cross-check. aggregate.py enforces
+RESULTS-TAKE-PRECEDENCE: a published cell is loaded only if no re-run exists, and published/
+is never merged into the main aggregation. In the current paper the only external numbers
+retained are PatchTST/64 (Nie et al.), used solely as the appendix cross-check.
+
+(Historical note: an earlier plan cited PatchTST, iTransformer, DLinear, NHITS, and TiDE from
+the literature; all of these were subsequently re-run, so none use published numbers in the
+main results.)
 
 Usage:
-    python experiments/add_published.py          # Add all known published results
+    python experiments/add_published.py          # record known external (cross-check) results
     python experiments/add_published.py --list   # Show what's available
 """
 import argparse
