@@ -1,15 +1,16 @@
 cff-version: 1.2.0
 message: >-
   If you use this software, please cite it using the metadata below. The
-  associated paper is to be submitted to IEEE Access (2026); please cite it as
-  well once published.
+  associated manuscript is under submission (2026); please cite it as well
+  once published.
 title: >-
-  AMS-CeNN: Robust, Stability-Certified Multi-Scale Cellular Neural Networks
-  for Long-Horizon Time Series Forecasting
+  AMS-CeNN: An Auditable, Stability-Certified Cellular Residual Network for
+  Robust Long-Horizon Engineering Forecasting
 type: software
 version: 1.0.0
 date-released: "2026-06-29"
 license: Apache-2.0
+doi: "10.5281/zenodo.21041027"
 repository-code: "https://github.com/mohamedelbahnasawi/ams-cenn"
 url: "https://github.com/mohamedelbahnasawi/ams-cenn"
 authors:
@@ -40,3 +41,5 @@ keywords:
   - nonlinear dynamical systems
   - stability analysis
   - robustness
+  - auditability
+  - residual forecasting
