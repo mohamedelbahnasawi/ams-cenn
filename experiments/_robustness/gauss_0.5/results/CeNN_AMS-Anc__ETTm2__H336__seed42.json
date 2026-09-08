@@ -1,0 +1,21 @@
+{
+  "model": "CeNN_AMS-Anc",
+  "dataset": "ETTm2",
+  "horizon": 336,
+  "seed": 42,
+  "kind": "gauss",
+  "level": 0.5,
+  "mse": 0.26835341243479266,
+  "mae": 0.35078364422426006,
+  "mse_clean": 0.24754528383306454,
+  "mae_clean": 0.3139529464477856,
+  "ratio_mse": 1.084057867229498,
+  "n_rows": 26307120,
+  "alias": "CeNN_AMS-Anc",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_PROBE-RevIN-LastOnly__ETTm2__H336__seed42"
+  },
+  "provenance_note": "copied from the robustness run of the same checkpoints (the same variant under its earlier name PROBE-RevIN-LastOnly == CeNN_AMS-Anc)"
+}

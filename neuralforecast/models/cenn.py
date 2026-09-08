@@ -84,6 +84,11 @@ class CeNN(BaseModel):
         linear_skip: bool = False,
         readout_act: str = "tanh",
         trunk_type: str = "cenn",
+        dilations: Optional[list] = None,
+        block_norm: str = "layernorm",
+        revin: bool = False,
+        revin_mode: str = "mean",
+        trunk_squash: bool = False,
         # Bounded gate + spectral cap (exposed so ablations can toggle them;
         # defaults match the cell defaults => no behavior change for existing variants).
         alpha_min: float = 0.5,
@@ -180,6 +185,11 @@ class CeNN(BaseModel):
             linear_skip=linear_skip,
             readout_act=readout_act,
             trunk_type=trunk_type,
+            dilations=dilations,
+            block_norm=block_norm,
+            revin=revin,
+            revin_mode=revin_mode,
+            trunk_squash=trunk_squash,
             alpha_min=alpha_min,
             alpha_max=alpha_max,
             spectral_cap=spectral_cap,

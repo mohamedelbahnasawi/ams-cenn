@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_CeNN-Full",
+  "dataset": "ETTh2",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 20551,
+  "flops_fwd": 3420672,
+  "macs_fwd": 1710336.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 100.623,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 1.042,
+  "peak_train_mb": 139.8,
+  "peak_infer_mb": 35.0,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

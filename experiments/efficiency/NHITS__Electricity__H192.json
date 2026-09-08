@@ -1,0 +1,20 @@
+{
+  "model": "NHITS",
+  "dataset": "Electricity",
+  "horizon": 192,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 3850064,
+  "flops_fwd": 2466594816,
+  "macs_fwd": 1233297408.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 271.981,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 77.3762,
+  "peak_train_mb": 145.2,
+  "peak_infer_mb": 50.9,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

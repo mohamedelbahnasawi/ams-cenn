@@ -1,0 +1,27 @@
+{
+  "model": "PatchTST",
+  "dataset": "ETTm1",
+  "horizon": 336,
+  "seed": 42,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.38894819602095454,
+  "mae": 0.41859517122698875,
+  "mse_clean": 0.3076980005061368,
+  "mae_clean": 0.363288221019721,
+  "ratio_mse": 1.264058249911173,
+  "n_rows": 26307120,
+  "alias": "PatchTST",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "PatchTST__ETTm1__H336__seed42"
+  },
+  "dead_ids": [
+    "LUFL",
+    "MULL"
+  ],
+  "mse_healthy": 0.32658628089284264,
+  "mse_clean_healthy": 0.32658628089284264,
+  "ratio_mse_healthy": 1.0
+}

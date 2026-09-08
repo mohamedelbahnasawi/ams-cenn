@@ -1,0 +1,20 @@
+{
+  "model": "PatchTST",
+  "dataset": "Weather",
+  "horizon": 96,
+  "seed": 42,
+  "kind": "spike",
+  "level": 0.01,
+  "mse": 0.18582636051542434,
+  "mae": 0.25558063700171385,
+  "mse_clean": 0.1597798092466293,
+  "mae_clean": 0.21907810186459425,
+  "ratio_mse": 1.163015285796159,
+  "n_rows": 21055104,
+  "alias": "PatchTST",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "PatchTST__Weather__H96__seed42"
+  }
+}

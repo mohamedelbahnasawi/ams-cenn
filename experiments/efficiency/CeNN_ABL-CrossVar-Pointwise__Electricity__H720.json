@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-CrossVar-Pointwise",
+  "dataset": "Electricity",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 434577,
+  "flops_fwd": 127559680,
+  "macs_fwd": 63779840.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 158.636,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 11.2279,
+  "peak_train_mb": 931.1,
+  "peak_infer_mb": 48.1,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

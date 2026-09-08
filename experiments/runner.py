@@ -60,6 +60,10 @@ SAVE_BASELINE_CKPTS = True
 # deterministic, so the re-run rewrites identical metrics; its purpose is to REGENERATE ARTIFACTS
 # (predictions/tau/branches) for cells whose metrics were saved without --save-artifacts. Set by --force.
 FORCE_RERUN = False
+# Opt-in (default OFF): also save per-window predictions for NON-CeNN baselines, so the
+# multi-model forecast-overlay figure can plot truth vs AMS-CeNN vs baselines. Purely additive:
+# writes artifacts/predictions/*.npz only; never writes results/. Set by --save-baseline-preds.
+SAVE_BASELINE_PREDS = False
 
 
 def _provenance():
@@ -183,7 +187,7 @@ def _common_kwargs(h, seed, max_steps, dataset_name=None):
 # raises a clear ValueError. Each variant is _VARIANT_BASE plus ONLY the kwargs it
 # changes, so every row's delta (the single factor it ablates) is self-documenting and
 # nothing silently relies on a wrapper default. _VARIANT_BASE == C1-BoundedTau (the
-# reference point). All variants use scaler_type='minmax'. K-sweep variants
+# reference point). Min-max-era variants use scaler_type='minmax'; anchored variants use identity. K-sweep variants
 # override K via _VARIANT_K (annotated). feedback-conv evals/step: euler=1, exp_euler=1,
 # heun=2, rk4=4 — iso-MAC pair is K2-Heun (4 evals) vs K4-Euler (4 evals).
 _VARIANT_BASE = dict(
@@ -192,6 +196,7 @@ _VARIANT_BASE = dict(
     channel_groups=1, patch_len=None, stride=None, head_type="linear",
     alpha_min=0.5, alpha_max=0.99, spectral_cap=True, scaler_type="minmax",
 )
+_ANCH = dict(revin=True, revin_mode="last_only", scaler_type="identity")   # anchored protocol (see below)
 VARIANT_SPECS = {
     # ---- MAIN ----
     "S0-StableBase":              {**_VARIANT_BASE, "adaptive_tau": False},                                          # fixed bounded α (substrate)
@@ -286,13 +291,79 @@ VARIANT_SPECS = {
     # whether explicit cross-series coupling helps the high-cardinality regime (Electricity, Traffic).
     "C1C2-Skip-K2-STAR":          {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "star"},      # O(V) STAR aggregate-redistribute
     "C1C2-Skip-K2-Pointwise":     {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "pointwise_mix": True},    # latent 1x1 channel mix
+    # PROBE arms (2026-09, single-seed scouting that preceded the anchored protocol; run ONLY under
+    # a scratch CENN_EXP_DIR, never into canonical results). Two structural handicaps of the trunk
+    # vs the zero-init skip: (i) dropout 0.25 on the trunk embedding + residual while the skip has
+    # none; (ii) no in-model instance normalization, which the four strongest baselines carry.
+    "PROBE-Dropout0":             {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "dropout": 0.0},
+    "PROBE-RevIN":                {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True},
+    "PROBE-RevIN-Dropout0":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "dropout": 0.0},
+    "PROBE-RevIN-Last":           {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last"},       # NLinear anchor + std
+    "PROBE-RevIN-LastOnly":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_only"},  # NLinear anchor, no std
+    # Contamination probe arms (2026-09-02): recover the bounded-input robustness min-max gave.
+    "PROBE-LastMAD":              {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_mad"},
+    "PROBE-LastOnly-Squash":      {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_only", "trunk_squash": True},
+    "PROBE-LastMAD-Squash":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_mad", "trunk_squash": True},
+    # ---- ANCHORED protocol (2026-09): in-model last-value anchor (NLinear form), NO pipeline
+    # scaler, applied to every variant the way RevIN applies to every PatchTST ablation. This is
+    # the headline protocol (AMS-Anc: mean rank 3.14 of 12 at 5 seeds vs 5.21 for the earlier
+    # min-max headline C1C2-Skip-K2, which stays as the normalization ablation row). All rows at the
+    # headline K=2 unless the name says otherwise. scaler_type=identity is in the spec, so no env
+    # override is needed; CENN_DATASET_SCALER (Weather->identity) is a no-op here.
+    "AMS-Anc":                    {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True},                       # HEADLINE (== PROBE-RevIN-LastOnly)
+    "S0-Anc":                     {**_VARIANT_BASE, **_ANCH, "adaptive_tau": False},                                                              # substrate
+    "C1-Anc":                     {**_VARIANT_BASE, **_ANCH},                                                                                     # + bounded gate
+    "C2-Anc":                     {**_VARIANT_BASE, **_ANCH, "adaptive_tau": False, "multiscale_mode": "parallel_ensemble"},                      # + multi-scale
+    "C1C2-Anc":                   {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble"},                                             # -skip ablation
+    "SkipOnly-Anc":               {**_VARIANT_BASE, **_ANCH, "trunk_type": "none", "linear_skip": True},                                          # == NLinear
+    "MLPSkip-Anc":                {**_VARIANT_BASE, **_ANCH, "trunk_type": "mlp", "linear_skip": True},                                           # generic-trunk control
+    "AMS-Anc-K4":                 {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True},                       # K-curve
+    "AMS-Anc-K8":                 {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True},                       # K-curve
+    "FrozenSkip-TrainTrunk-Anc":  {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
+                                   "warm_start_from": "SkipOnly-Anc", "freeze": "skip"},                                                         # pathway pilot
+    # Seasonal-dilation probe (2026-09-03): branches aligned to the data's periods instead of
+    # powers of two. Resolved per dataset frequency in build_cenn (dilations_by_freq -> dilations).
+    "AMS-Anc-Seas":               {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
+                                   "dilations_by_freq": {"h": [1, 24, 48, 168], "15min": [1, 96, 192, 672], "10min": [1, 144, 288, 1008]}},
+    # Hardware probe (2026-09-03): the in-block LayerNorm replaced by a per-channel affine / nothing.
+    "AMS-Anc-Affine":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "block_norm": "affine"},
+    "AMS-Anc-NoNorm":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "block_norm": "none"},
+    "AMS-Anc-STAR":               {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "star"},
+    "AMS-Anc-Pointwise":          {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "pointwise_mix": True},
+    "AMS-Anc-VarMix":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "varmix"},
+    "AMS-Anc-G4":                 {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "channel_groups": 4},
     "C1C2-Skip-K2-VarMix":        {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "varmix"},    # dense O(V^2) V x V mix
     "C1C2-Skip-K2-G4":            {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "channel_groups": 4},      # grouped conv over hidden
-    # CONTROL for "isn't this just a linear skip + ANY nonlinear block?": swap the CeNN dynamics for
+    # CONTROL for the question whether any nonlinear block on top of the linear skip would do: swap the CeNN dynamics for
     # a generic MLP-Mixer trunk, holding input_proj + head + zero-init skip constant. K/integrator/
     # multiscale are inherited but IGNORED by the MLP trunk (logged cenn_K is meaningless here). A tie
     # with AMS-CeNN shows the CeNN's inductive bias is not an ACCURACY win over a generic trunk.
     "MLP-Skip":                   {**_VARIANT_BASE, "trunk_type": "mlp", "linear_skip": True},
+    # SKIP-ONLY control (component necessity): remove the nonlinear trunk entirely and forecast with
+    # the zero-init linear residual alone. Completes the pathway decomposition together with
+    # C1C2-Ensemble (trunk, NO residual) and MLP-Skip (generic trunk + residual). Comparing this
+    # against the headline C1C2-Skip-K2 isolates what the cellular pathway contributes ON TOP OF the
+    # linear floor -- the question whether the model is only a strong linear residual. Pre-registered
+    # reading: if Skip-Only ~= C1C2-Skip-K2 the cellular path adds no accuracy and we report that.
+    "Skip-Only":                  {**_VARIANT_BASE, "trunk_type": "none", "linear_skip": True},
+    # --- Pathway-attribution arms. Two-stage: stage 1 fits one path alone, stage 2 loads
+    # those weights, FREEZES that path, and trains only the other. This is what separates the two
+    # explanations for skip dominance that the one-stage ablations cannot tell apart:
+    #   (a) the zero-init skip converges first and starves the trunk of gradient (an optimisation
+    #       artifact -- the trunk would help if it were given a chance), versus
+    #   (b) after a full-lookback linear fit there is little left for a <=33-step local nonlinear
+    #       path to exploit (intrinsic).
+    # The frozen-residual arm is the decisive one: if the trunk cannot beat an already-fitted, immovable skip, then no
+    # gradient it was denied would have helped, which is (b). Requires the stage-1 checkpoint.
+    "FrozenSkip-TrainTrunk":      {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
+                                   "warm_start_from": "Skip-Only", "freeze": "skip"},
+    "FrozenTrunk-TrainSkip":      {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
+                                   "warm_start_from": "C1C2-Ensemble-K2", "freeze": "trunk"},
+    # Stage-1 source for FrozenTrunk-TrainSkip: the headline trunk (C1 gate + C2 ensemble) with NO
+    # linear residual, at K=2. Distinct from C1C2-Ensemble (K=8, so its trunk is optimised for a
+    # different unroll depth) and from K2-C2Ensemble (adaptive_tau=False, i.e. no C1 gate). Using
+    # either of those as the source would confound the arm with a K or C1 change.
+    "C1C2-Ensemble-K2":           {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble"},
     # Closes the integrator gap on the EXACT headline arch (the K-sweep was on the C1 chassis): the
     # headline with exp_euler instead of euler at K=2. Expected ~= euler (K4 evidence: exp_euler within
     # 0.0004 of euler) -> confirms Euler-K2 leaves no accuracy on the table for the FINAL model.
@@ -330,12 +401,108 @@ _VARIANT_K = {
     "K2-Euler": 2, "K2-Heun": 2,
     "K2-C2Ensemble": 2,   # confirmatory: headline architecture at K=2
     "C1C2-Skip-K2": 2,    # NEW HEADLINE: linear-skip at K=2 (4x cheaper, accuracy-neutral)
+    # Pathway-attribution arms + their stage-1 source: pinned to the headline K=2 so the
+    # comparison against C1C2-Skip-K2 isolates the pathway, not the unroll depth.
+    "Skip-Only": 2, "C1C2-Ensemble-K2": 2,
+    "FrozenSkip-TrainTrunk": 2, "FrozenTrunk-TrainSkip": 2,
+    "PROBE-Dropout0": 2, "PROBE-RevIN": 2, "PROBE-RevIN-Dropout0": 2,  # probe arms on the headline (K=2)
+    "PROBE-RevIN-Last": 2, "PROBE-RevIN-LastOnly": 2,
+    "PROBE-LastMAD": 2, "PROBE-LastOnly-Squash": 2, "PROBE-LastMAD-Squash": 2,
+    "AMS-Anc": 2, "S0-Anc": 2, "C1-Anc": 2, "C2-Anc": 2, "C1C2-Anc": 2, "SkipOnly-Anc": 2, "MLPSkip-Anc": 2,
+    "AMS-Anc-K4": 4, "AMS-Anc-K8": 8, "FrozenSkip-TrainTrunk-Anc": 2,
+    "AMS-Anc-STAR": 2, "AMS-Anc-Pointwise": 2, "AMS-Anc-VarMix": 2, "AMS-Anc-G4": 2, "AMS-Anc-Seas": 2, "AMS-Anc-Affine": 2, "AMS-Anc-NoNorm": 2,
     "C1C2-Skip-K2-STAR": 2, "C1C2-Skip-K2-Pointwise": 2,  # cross-channel variants on headline (K=2)
     "C1C2-Skip-K2-VarMix": 2, "C1C2-Skip-K2-G4": 2,
     "C1C2-Skip-ExpEuler-K2": 2,   # integrator-gap closer: headline arch, exp_euler @ K=2
     "C1C2-Skip-K4": 4,    # K=4 midpoint for the headline-native K-curve {K8,K4,K2}
     "CAP-Skip-H128": 2, "CAP-Skip-H256": 2, "CAP-Skip-H512": 2,   # headline arch (K=2) at higher capacity
 }
+
+
+def _warm_start(model, source_variant, dataset_name, horizon, seed, scope):
+    """Load ONLY the `scope` pathway ('skip' or 'trunk') from a stage-1 checkpoint.
+
+    Scope-matched to the freeze on purpose. The arm's claim is "train one path against a fitted,
+    immovable other path", so exactly the path that will be frozen is the path that should be
+    inherited; everything else must start from this run's own initialization. Loading the whole
+    state dict would silently transfer the source's other tensors too -- for Skip-Only those are
+    untrained leftovers, which is not wrong so much as unaccounted for, and the arm should not
+    depend on a detail nobody stated.
+    """
+    ckpt_dir = CHECKPOINTS_DIR / f"CeNN_{source_variant}__{dataset_name}__H{horizon}__seed{seed}"
+    if not ckpt_dir.exists():
+        raise FileNotFoundError(
+            f"warm start needs the stage-1 checkpoint {ckpt_dir}. Run CeNN_{source_variant} on "
+            f"{dataset_name} H{horizon} seed{seed} first."
+        )
+    src = NeuralForecast.load(path=str(ckpt_dir)).models[0].model.state_dict()
+    want = {k: v for k, v in src.items()
+            if ((k.startswith("skip.") or k.startswith("revin_")) if scope == "skip"
+                else not (k.startswith("skip.") or k.startswith("revin_")))}
+    tgt = model.model.state_dict()
+    usable = {k: v for k, v in want.items() if k in tgt and tgt[k].shape == v.shape}
+    if not usable:
+        raise RuntimeError(
+            f"warm start from {ckpt_dir} matched NO '{scope}' tensors "
+            f"(source has {sorted(want)[:4]}...) -- key or shape mismatch"
+        )
+    model.model.load_state_dict(usable, strict=False)
+    print(f"    [warm-start] {len(usable)}/{len(want)} '{scope}' tensors from "
+          f"CeNN_{source_variant}; all other parameters at this run's own init")
+    return sorted(usable)
+
+
+def _apply_freeze(model, which):
+    """Freeze one pathway. `which` is 'skip' (the zero-init linear residual) or 'trunk'
+    (everything else: the cellular/MLP stack, the input projection and the head).
+
+    Sets requires_grad=False, which leaves p.grad None so the optimizer's update loop skips
+    the parameter entirely. That is the mechanism; it is NOT the guarantee. The guarantee is
+    the snapshot stored here and checked by `assert_frozen_unchanged` after fit -- weight
+    decay applied to a supposedly-frozen tensor would silently invalidate the whole arm, so
+    it is verified rather than assumed.
+    """
+    if which not in ("skip", "trunk"):
+        raise ValueError(f"freeze must be 'skip' or 'trunk', got {which!r}")
+    inner = model.model
+    frozen = []
+    for name, p in inner.named_parameters():
+        # The in-model anchor's affine (revin_weight/bias) is fitted in stage 1 with the skip and
+        # frozen with it: it is the normalization of the linear path, not a trunk parameter.
+        is_skip = name.startswith("skip.") or name.startswith("revin_")
+        if (which == "skip" and is_skip) or (which == "trunk" and not is_skip):
+            p.requires_grad = False
+            frozen.append(name)
+    if not frozen:
+        raise RuntimeError(f"freeze='{which}' matched no parameters -- naming changed?")
+    trainable = [n for n, p in inner.named_parameters() if p.requires_grad]
+    if not trainable:
+        raise RuntimeError(f"freeze='{which}' left NOTHING trainable")
+    model._freeze_which = which
+    model._freeze_guard = {n: p.detach().clone()
+                           for n, p in inner.named_parameters() if not p.requires_grad}
+    print(f"    [freeze] {which}: {len(frozen)} tensors frozen, {len(trainable)} trainable")
+    return frozen
+
+
+def assert_frozen_unchanged(model):
+    """Verify every frozen tensor is bit-identical to its pre-fit snapshot. Raises if not.
+
+    Without this check a pathway-attribution arm is not evidence: if the 'frozen' path moved
+    during training, the arm no longer isolates the pathway it claims to isolate.
+    """
+    guard = getattr(model, "_freeze_guard", None)
+    if not guard:
+        return
+    live = dict(model.model.named_parameters())
+    drifted = [n for n, before in guard.items()
+               if n not in live or not torch.equal(live[n].detach().cpu(), before.cpu())]
+    if drifted:
+        raise RuntimeError(
+            f"FROZEN PARAMETERS MOVED during fit ({len(drifted)}/{len(guard)}): {drifted[:5]}. "
+            f"The '{getattr(model, '_freeze_which', '?')}' arm is invalid -- do not report it."
+        )
+    print(f"    [freeze] verified: all {len(guard)} frozen tensors bit-identical after fit")
 
 
 def build_cenn(variant, h, n_series, seed, max_steps, K=8, dataset_name=None):
@@ -354,6 +521,17 @@ def build_cenn(variant, h, n_series, seed, max_steps, K=8, dataset_name=None):
         )
     spec = dict(VARIANT_SPECS[variant])
     scaler_type = spec.pop("scaler_type")
+    # Runner-level keys for the two-stage pathway-attribution arms -- popped so they never
+    # reach the CeNN constructor (which would reject them as unknown kwargs).
+    warm_start_from = spec.pop("warm_start_from", None)
+    freeze_path = spec.pop("freeze", None)
+    # Seasonal-dilation probe: pick the dilation list by the dataset's sampling frequency.
+    dil_by_freq = spec.pop("dilations_by_freq", None)
+    if dil_by_freq is not None:
+        freq = DATASET_INFO.get(dataset_name, {}).get("freq")
+        if freq not in dil_by_freq:
+            raise ValueError(f"{variant}: no dilation list for frequency {freq!r} (dataset {dataset_name})")
+        spec["dilations"] = dil_by_freq[freq]
     # Per-dataset scaler (validation-selected): CeNN's minmax default underperforms on Weather;
     # identity recovers ~13% there. Applied to ALL CeNN variants on the dataset for a controlled
     # within-dataset comparison. Datasets not listed keep the per-variant default. See config.
@@ -385,6 +563,20 @@ def build_cenn(variant, h, n_series, seed, max_steps, K=8, dataset_name=None):
         **spec,           # wires all params (patch/head/var_mix/groups/gate/cap/multiscale/integrator)
     )
     model.alias = name
+
+    # Two-stage arms: load stage 1's weights, then freeze that path so stage 2 trains only the
+    # other one. Order matters -- warm-start first, freeze second, so the snapshot taken by
+    # _apply_freeze records the LOADED values rather than the fresh initialization.
+    if warm_start_from is not None:
+        if freeze_path is None:
+            raise ValueError(
+                f"{variant}: warm_start_from without freeze is ambiguous -- the warm-start scope "
+                f"is defined as the path that gets frozen."
+            )
+        _warm_start(model, warm_start_from, dataset_name, h, seed, scope=freeze_path)
+    if freeze_path is not None:
+        _apply_freeze(model, freeze_path)
+
     return model, name, scaler_type
 
 
@@ -662,6 +854,11 @@ def run_single(model_name: str, dataset_name: str, horizon: int, seed: int,
             mae = float((cv_df[alias] - cv_df["y"]).abs().mean())
         train_time = time.time() - t0
 
+        # Pathway-attribution guard: for a frozen arm, prove the frozen path did not move.
+        # Deliberately raises rather than warns -- a silently-thawed arm would be reported as
+        # evidence it is not. No-op for every ordinary variant.
+        assert_frozen_unchanged(model)
+
         if wb_run is not None:
             try:
                 wb_run.summary["test_mse"] = mse
@@ -689,6 +886,12 @@ def run_single(model_name: str, dataset_name: str, horizon: int, seed: int,
                                Y_df, val_size, test_size)
             elif chunked is not None and model_name == f"CeNN_{CENN_MAIN_VARIANT}":
                 print("[branches skipped: chunked-CV cell] ", end="")
+
+        # Opt-in: additive baseline predictions for the multi-model forecast-overlay figure.
+        # Writes only artifacts/predictions/<baseline>__...npz; the metrics path above is untouched.
+        if (SAVE_BASELINE_PREDS and save_artifacts and not model_name.startswith("CeNN_")
+                and not cv_df.empty):
+            _save_artifacts(nf, model_name, dataset_name, horizon, seed, cv_df, alias, force_any=True)
 
         del cv_df
 
@@ -723,6 +926,17 @@ def run_single(model_name: str, dataset_name: str, horizon: int, seed: int,
             "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); "
                                  "use efficiency compute_ms for inference cost",
             "params": sum(p.numel() for p in model.parameters()),
+            # Validation record (added 2026-09-02): NF computes valid_loss (MAE) on the
+            # inverse-normalized scale, so it is comparable across scalers and hyperparameters
+            # and is the only defensible basis for selecting either. Before this field existed no
+            # run stored a validation score, which is why "validation-selected" could not be
+            # evidenced for the scaler.
+            # NeuralForecast deep-copies the model list at fit time (core.py: self.models =
+            # [deepcopy(m) ...]), so the trajectories live on nf.models[0], not on `model`.
+            "best_valid_loss": (min(float(v) for _, v in nf.models[0].valid_trajectories)
+                                if getattr(nf.models[0], "valid_trajectories", None) else None),
+            "final_valid_loss": (float(nf.models[0].valid_trajectories[-1][1])
+                                 if getattr(nf.models[0], "valid_trajectories", None) else None),
             "source": "experiment",
             "provenance": _PROVENANCE,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -886,7 +1100,7 @@ def _chunked_cross_validation(nf, Y_df, val_size, test_size, h, alias,
     return sse / n_rows, sae / n_rows, artifact_df, n_chunks
 
 
-def _save_artifacts(nf, model_name, dataset_name, horizon, seed, cv_df, alias):
+def _save_artifacts(nf, model_name, dataset_name, horizon, seed, cv_df, alias, force_any=False):
     """Save per-window test predictions (+ index) for the forecast-grid figure / seed-ensemble band.
 
     SCOPE + SIZE GUARDS (the unguarded version wrote the FULL stride-1 prediction table for EVERY
@@ -900,7 +1114,7 @@ def _save_artifacts(nf, model_name, dataset_name, horizon, seed, cv_df, alias):
     tau/aeff/branches artifacts are unaffected (tiny / already gated)."""
     import numpy as np
 
-    if model_name != f"CeNN_{CENN_MAIN_VARIANT}":
+    if not force_any and model_name != f"CeNN_{CENN_MAIN_VARIANT}":
         return  # predictions feed headline-only figures; other variants' tables are dead weight
     pred_dir = ARTIFACTS_DIR / "predictions"
     # Self-describing .npz keeps unique_id/ds/cutoff so cross-seed alignment is a join on
@@ -1177,6 +1391,10 @@ def main():
     parser.add_argument("--max-steps", type=int, default=MAX_STEPS)
     parser.add_argument("--save-artifacts", action="store_true",
                         help="Save predictions and tau values")
+    parser.add_argument("--save-baseline-preds", action="store_true",
+                        help="ALSO save per-window predictions for non-CeNN baselines (forecast-overlay "
+                             "figure). Additive: writes artifacts/predictions/ only, never results/. "
+                             "Use with --save-artifacts (and a CENN_EXP_DIR scratch directory).")
     parser.add_argument("--dry-run", action="store_true",
                         help="Show what would run without running")
     parser.add_argument("--force", action="store_true",
@@ -1200,6 +1418,8 @@ def main():
     SAVE_BASELINE_CKPTS = not args.no_baseline_checkpoints
     global FORCE_RERUN
     FORCE_RERUN = args.force
+    global SAVE_BASELINE_PREDS
+    SAVE_BASELINE_PREDS = args.save_baseline_preds
     if FORCE_RERUN:
         print("[--force] skip-if-exists DISABLED: existing cells will re-run and their result JSON "
               "+ checkpoint will be OVERWRITTEN. Metrics are identical only if the env/code is "

@@ -1,0 +1,20 @@
+{
+  "model": "TCN",
+  "dataset": "ETTh2",
+  "horizon": 336,
+  "seed": 42,
+  "kind": "gauss",
+  "level": 0.1,
+  "mse": 0.5134749461184022,
+  "mae": 0.5000552457367278,
+  "mse_clean": 0.50879051340657,
+  "mae_clean": 0.4979876696504205,
+  "ratio_mse": 1.009206996963186,
+  "n_rows": 5985840,
+  "alias": "TCN",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TCN__ETTh2__H336__seed42"
+  }
+}

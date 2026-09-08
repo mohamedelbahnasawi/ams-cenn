@@ -1,0 +1,37 @@
+{
+  "model": "CeNN_K4-Euler",
+  "dataset": "Electricity",
+  "horizon": 192,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.6827230420251831,
+  "mae": 0.5968755798132102,
+  "train_time_s": 1720.0,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 147073,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "64a9d4c",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-13T13:06:50.541715+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 2632,
+    "test_size": 5260,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 2,
+    "batch_size": 8,
+    "cenn_K": 4,
+    "integrator": "euler",
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

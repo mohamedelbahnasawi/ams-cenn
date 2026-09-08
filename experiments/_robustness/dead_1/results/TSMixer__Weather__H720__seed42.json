@@ -1,0 +1,26 @@
+{
+  "model": "TSMixer",
+  "dataset": "Weather",
+  "horizon": 720,
+  "seed": 42,
+  "kind": "dead",
+  "level": 1,
+  "mse": 0.33743015940726073,
+  "mae": 0.35817698297420053,
+  "mse_clean": 0.3265608775596238,
+  "mae_clean": 0.3474803176218952,
+  "ratio_mse": 1.03328409063836,
+  "n_rows": 148478400,
+  "alias": "TSMixer",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TSMixer__Weather__H720__seed42"
+  },
+  "dead_ids": [
+    "H2OC (mmol/mol)"
+  ],
+  "mse_healthy": 0.32698139392542425,
+  "mse_clean_healthy": 0.3269515503141307,
+  "ratio_mse_healthy": 1.0000912783905287
+}

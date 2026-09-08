@@ -17,7 +17,24 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-KINDS = ("gauss", "spike", "mask", "scale", "shift")
+KINDS = ("gauss", "spike", "mask", "scale", "shift", "dead")
+
+
+def dead_ids(Y_df: pd.DataFrame, level: float, seed: int) -> set:
+    """Deterministic set of `level` series (channels) that are 'dead' for this seed.
+
+    Dead-sensor family (added 2026-09-02): the five original families corrupt EVERY channel at
+    once; the realistic fault on an industrial line is ONE sensor stuck while the others are
+    fine. `level` = number of dead channels. Selection is a seeded permutation of the sorted
+    unique_ids so run_robustness.py can recover the same set for healthy-channel scoring."""
+    uids = sorted(Y_df["unique_id"].unique())
+    k = int(level)
+    if k <= 0:
+        return set()
+    # NOTE: an earlier version salted this seed with the process-dependent hash("dead"); the
+    # dead channels actually used by each stored cell are recorded in its "dead_ids" field.
+    rng = np.random.default_rng(((seed * 1_000_003) ^ 7_919 ^ 0x1BADD1E) & 0xFFFFFFFF)
+    return set(rng.permutation(uids)[:min(k, len(uids))].tolist())
 
 
 def _tail_idx(n: int, tail: int):
@@ -39,6 +56,7 @@ def perturb_df(Y_df: pd.DataFrame, kind: str, level: float, seed: int,
     if level == 0:
         return out
     tail = int(test_size + input_size)
+    dead = dead_ids(out, level, seed) if kind == "dead" else set()
     # group-stable RNG seeding: each series gets its own deterministic stream
     for gi, (uid, g) in enumerate(out.groupby("unique_id", sort=True)):
         idx = g.index.to_numpy()
@@ -77,6 +95,11 @@ def perturb_df(Y_df: pd.DataFrame, kind: str, level: float, seed: int,
         elif kind == "shift":
             # constant level/distribution shift (z-units) on the input region
             y = y + float(level)
+        elif kind == "dead":
+            # dead sensor: the selected channels are stuck at the global mean (0 in the z-score
+            # domain) over the whole input region; every other channel is untouched.
+            if uid in dead:
+                y[:] = 0.0
 
         out.loc[reg, "y"] = y
     return out

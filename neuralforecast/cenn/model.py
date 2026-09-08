@@ -453,12 +453,41 @@ class CeNNLayer1D(nn.Module):
 
 
 # ---------------------------------------------------------------------------
+# Block normalization (hardware probe, 2026-09-03)
+# ---------------------------------------------------------------------------
+class ChannelAffine(nn.Module):
+    """Per-channel scale and bias with NO statistics: the hardware-realizable stand-in for
+    LayerNorm inside the cellular block. LayerNorm over the 64 hidden channels at every time
+    step needs a mean, a variance, a square root and a division per step, none of which belongs
+    in a cellular array; a per-channel affine is one multiply-add per cell. Operates on the
+    channels-last layout LayerNorm uses here ([B, L, C])."""
+    def __init__(self, channels: int):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(channels))
+        self.bias = nn.Parameter(torch.zeros(channels))
+
+    def forward(self, x):
+        return x * self.weight + self.bias
+
+
+def make_block_norm(kind: str, channels: int) -> nn.Module:
+    """'layernorm' (shipped, byte-identical) | 'affine' (per-channel scale+bias) | 'none'."""
+    if kind == "layernorm":
+        return nn.LayerNorm(channels)
+    if kind == "affine":
+        return ChannelAffine(channels)
+    if kind == "none":
+        return nn.Identity()
+    raise ValueError(f"block_norm must be layernorm|affine|none, got {kind!r}")
+
+
+# ---------------------------------------------------------------------------
 # ResidualNorm1D
 # ---------------------------------------------------------------------------
 class ResidualNorm1D(nn.Module):
-    def __init__(self, channels: int, dropout: float):
+    def __init__(self, channels: int, dropout: float, block_norm: str = "layernorm"):
         super().__init__()
-        self.norm = nn.LayerNorm(channels)
+        self.norm = make_block_norm(block_norm, channels)
         self.drop = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
@@ -559,11 +588,16 @@ class MultiScaleCeNNBlock1D(nn.Module):
         channel_groups: int = 1,
         pointwise_mix: bool = False,
         integrator: str = "euler",
+        dilations: Optional[List[int]] = None,   # explicit dilation list, e.g. seasonal {1,24,48,168} (default: powers of two)
+        block_norm: str = "layernorm",           # "layernorm" | "affine" | "none": in-block normalization (affine/none = hardware-friendly)
         **cell_kwargs,
     ):
         super().__init__()
-        dilations = [2 ** i for i in range(n_scales)]
-        self.res = ResidualNorm1D(channels=channels, dropout=dropout)
+        # Default: powers of two (the shipped C2). An explicit list lets a branch read the SAME
+        # phase across periods (d = 24 on hourly data compares t, t-24, t-48: a seasonal-difference
+        # operator) instead of duplicating the local smoothing the linear skip already provides.
+        dilations = list(dilations) if dilations else [2 ** i for i in range(n_scales)]
+        self.res = ResidualNorm1D(channels=channels, dropout=dropout, block_norm=block_norm)
         self.branches = nn.ModuleList([
             CeNNLayer1D(
                 channels=channels, K=K,
@@ -574,7 +608,7 @@ class MultiScaleCeNNBlock1D(nn.Module):
             )
             for d in dilations
         ])
-        self.final_norm = nn.LayerNorm(channels)
+        self.final_norm = make_block_norm(block_norm, channels)
 
     def _ensemble(self, x: torch.Tensor) -> torch.Tensor:
         """Run all branches in parallel and average (mean) their outputs."""
@@ -618,6 +652,8 @@ class CeNNStack1D(nn.Module):
         channel_groups: int = 1,
         pointwise_mix: bool = False,
         integrator: str = "euler",        # integrator selector
+        dilations: Optional[List[int]] = None,   # explicit dilations for the parallel ensemble
+        block_norm: str = "layernorm",           # normalization inside the parallel-ensemble block
         **cell_kwargs,
     ):
         super().__init__()
@@ -631,6 +667,8 @@ class CeNNStack1D(nn.Module):
                     channels=channels, K=K,
                     dropout=dropout,
                     n_scales=num_layers,  # n_scales == num_layers: keeps block depth comparable
+                    dilations=dilations,
+                    block_norm=block_norm,
                     channel_groups=channel_groups,
                     pointwise_mix=pointwise_mix,
                     integrator=integrator,
@@ -730,6 +768,11 @@ class CeNNModel1D(nn.Module):
         head_type: str = "linear",            # Path A: "linear" or "mlp"
         linear_skip: bool = False,            # direct raw-input linear path added to the output
         trunk_type: str = "cenn",             # "cenn" (default) or "mlp" (generic-trunk CONTROL)
+        dilations: Optional[List[int]] = None,  # explicit dilation list for the parallel ensemble
+        block_norm: str = "layernorm",          # LayerNorm | per-channel affine | none inside the block
+        revin: bool = False,                  # in-model reversible instance normalization (AMS-CeNN: True)
+        revin_mode: str = "mean",             # "mean" (RevIN) | "last" (NLinear anchor + std) | "last_only" (NLinear anchor, no std) | "last_mad" (anchor + robust MAD scale)
+        trunk_squash: bool = False,           # trunk sees tanh(normalized input); the linear skip sees it unsquashed
         **cell_kwargs,
     ):
         super().__init__()
@@ -806,13 +849,26 @@ class CeNNModel1D(nn.Module):
                 dilation_schedule=dilation_schedule,
                 multiscale_mode=multiscale_mode,
                 integrator=integrator,
+                dilations=dilations,
+                block_norm=block_norm,
                 adaptive_tau=adaptive_tau,
                 pointwise_mix=pointwise_mix,
                 channel_groups=channel_groups,
                 **cell_kwargs,
             )
+        elif trunk_type == "none":
+            # SKIP-ONLY control (component-necessity probe): the nonlinear trunk is removed
+            # entirely, so the forecast is produced by the zero-init linear residual alone.
+            # Together with the -skip ablation (trunk, no residual) and the generic-trunk
+            # control (MLP instead of CeNN) this completes the pathway decomposition: it is
+            # the arm that answers whether the cellular pathway earns its place ON TOP OF the
+            # linear floor, rather than merely co-existing with it. Requires linear_skip=True,
+            # since otherwise no forward path would remain.
+            if not linear_skip:
+                raise ValueError("trunk_type='none' requires linear_skip=True (no path otherwise)")
+            self.stack = None
         else:
-            raise ValueError(f"trunk_type must be 'cenn' or 'mlp', got {trunk_type!r}")
+            raise ValueError(f"trunk_type must be 'cenn', 'mlp' or 'none', got {trunk_type!r}")
 
         # --- Prediction head ---
         if head_type == "mlp":
@@ -838,10 +894,47 @@ class CeNNModel1D(nn.Module):
         # smooths the signal before a linear temporal head, discarding detail a linear map keeps;
         # this parallel path recovers it. NOTE: only active for output_multiplier==1 (point losses);
         # silently disabled for probabilistic losses -- document if the paper extends to those.
+        # In-model reversible instance normalization (added with the anchored protocol, 2026-09;
+        # the shipped AMS-CeNN uses revin=True, revin_mode="last_only"): the mechanism PatchTST /
+        # TSMixer / iTransformer / TimeMixer carry by default in NeuralForecast (revin=True /
+        # use_norm=True). Per window and per variable: subtract the lookback mean (or the LAST
+        # value, NLinear form), optionally divide by the lookback std, apply a per-variable affine,
+        # forecast, then invert -- so the loss is computed on the ORIGINAL scale (unlike the NF
+        # per-window scaler, which also rescales the target). The earlier configuration relied on
+        # a pipeline min-max scaler instead; see the normalization ablation row.
+        self.revin = revin
+        if revin_mode not in ("mean", "last", "last_only", "last_mad"):
+            raise ValueError(f"revin_mode must be mean|last|last_only|last_mad, got {revin_mode!r}")
+        self.revin_mode = revin_mode
+        # Contamination probe (2026-09-02): the last-value anchor leaves noise/spikes at full
+        # amplitude for the trunk (min-max bounded them). Squashing the TRUNK input with tanh caps
+        # what a spike can do to the dynamics while the linear skip, which carries the accuracy,
+        # still sees the unsquashed anchored window.
+        self.trunk_squash = trunk_squash
+        if revin:
+            if output_multiplier != 1:
+                raise ValueError("revin=True requires a point loss (output_multiplier == 1)")
+            self.revin_weight = nn.Parameter(torch.ones(n_features))
+            self.revin_bias = nn.Parameter(torch.zeros(n_features))
+            self.revin_eps = 1e-5
+
         if linear_skip:
             self.skip = nn.Linear(seq_length, pred_length)
             nn.init.zeros_(self.skip.weight)
             nn.init.zeros_(self.skip.bias)
+
+        if self.stack is None:
+            # trunk_type='none' (Skip-Only control): forward returns the skip directly, so the
+            # projection and head modules are constructed but never reached. Left in place they
+            # receive no gradient -- harmless for the forecast, but they double the reported
+            # parameter count (743,847 instead of 369,360 at H=720), which would misstate the
+            # control's size in the compute table and leak dead tensors into its checkpoint,
+            # where a later warm start could load them into a real trunk. Drop them so the
+            # parameter count describes the model that actually runs.
+            for _unused in ("input_proj", "patch_proj", "pred_proj", "pred_head",
+                            "var_mixer", "input_dropout"):
+                if getattr(self, _unused, None) is not None:
+                    setattr(self, _unused, None)
 
     def _embed(self, x):  # x [B, L, V] -> u [B, hidden_dim, L_or_patches]
         # --- cross-variable coupling (VarMix / STAR) ---
@@ -876,10 +969,37 @@ class CeNNModel1D(nn.Module):
         bi = self._uq_branch_idx
         if bi is not None:
             return self.forward_branches(x)[bi]
-        out = self._head(self.stack(self._embed(x)))
-        if self.linear_skip and self.output_multiplier == 1:
-            # raw linear path: [B, L, V] -> per-variable Linear(L->H) (shared) -> [B, H, V]
-            out = out + self.skip(x.transpose(1, 2)).transpose(1, 2)
+        if self.revin:
+            # Anchor: window mean (RevIN) or last lookback value (NLinear-style). The last value is
+            # the better reference for short horizons, whose target sits right after the window;
+            # the mean is the more stable reference when the level drifts over a long horizon.
+            if self.revin_mode == "mean":
+                mean = x.mean(dim=1, keepdim=True)                              # [B, 1, V]
+            else:
+                mean = x[:, -1:, :]
+            if self.revin_mode == "last_only":
+                std = torch.ones_like(mean)
+            elif self.revin_mode == "last_mad":
+                # Robust scale: 1.4826 * median absolute deviation over the window, per variable.
+                # A spike barely moves the MAD, unlike the window std. Floor of 1e-2 in the global
+                # z-scored domain so near-flat windows cannot inflate the normalized input.
+                med = x.median(dim=1, keepdim=True).values
+                mad = (x - med).abs().median(dim=1, keepdim=True).values
+                std = (1.4826 * mad).clamp_min(1e-2)
+            else:
+                std = torch.sqrt(x.var(dim=1, keepdim=True, unbiased=False) + self.revin_eps)
+            x = (x - mean) / std * self.revin_weight + self.revin_bias
+        if self.stack is None:                            # trunk_type='none': skip-only control
+            out = self.skip(x.transpose(1, 2)).transpose(1, 2)
+        else:
+            x_trunk = torch.tanh(x) if self.trunk_squash else x
+            out = self._head(self.stack(self._embed(x_trunk)))
+            if self.linear_skip and self.output_multiplier == 1:
+                # raw linear path: [B, L, V] -> per-variable Linear(L->H) (shared) -> [B, H, V]
+                out = out + self.skip(x.transpose(1, 2)).transpose(1, 2)
+        if self.revin:
+            out = (out - self.revin_bias) / (self.revin_weight + self.revin_eps * self.revin_eps)
+            out = out * std + mean
         return out
 
     def forward_branches(self, x):  # x [B, L, V] -> [n_branches, B, H, V*out_mult]

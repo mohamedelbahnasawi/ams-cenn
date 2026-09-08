@@ -1,0 +1,20 @@
+{
+  "model": "DLinear",
+  "dataset": "Electricity",
+  "horizon": 336,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 344736,
+  "flops_fwd": 220889088,
+  "macs_fwd": 110444544.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 181.806,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 33.3873,
+  "peak_train_mb": 75.1,
+  "peak_infer_mb": 36.5,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_K2-Euler",
+  "dataset": "Weather",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 59125,
+  "flops_fwd": 11071488,
+  "macs_fwd": 5535744.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 110.565,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 4.6428,
+  "peak_train_mb": 320.1,
+  "peak_infer_mb": 36.5,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

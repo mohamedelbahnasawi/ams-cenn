@@ -1,0 +1,20 @@
+{
+  "model": "TSMixer",
+  "dataset": "Weather",
+  "horizon": 720,
+  "seed": 42,
+  "kind": "spike",
+  "level": 0.05,
+  "mse": 0.4476107252185204,
+  "mae": 0.47813178816154456,
+  "mse_clean": 0.3265608775596238,
+  "mae_clean": 0.3474803176218952,
+  "ratio_mse": 1.3706808009688642,
+  "n_rows": 148478400,
+  "alias": "TSMixer",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TSMixer__Weather__H720__seed42"
+  }
+}

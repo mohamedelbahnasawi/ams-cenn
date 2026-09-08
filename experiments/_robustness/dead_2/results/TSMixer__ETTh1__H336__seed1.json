@@ -1,0 +1,27 @@
+{
+  "model": "TSMixer",
+  "dataset": "ETTh1",
+  "horizon": 336,
+  "seed": 1,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.7922294608194203,
+  "mae": 0.637109996898987,
+  "mse_clean": 0.3946639208567698,
+  "mae_clean": 0.4285332137849484,
+  "ratio_mse": 2.007352126588064,
+  "n_rows": 5985840,
+  "alias": "TSMixer",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TSMixer__ETTh1__H336__seed1"
+  },
+  "dead_ids": [
+    "MUFL",
+    "OT"
+  ],
+  "mse_healthy": 0.36950820533461637,
+  "mse_clean_healthy": 0.36749390728239795,
+  "ratio_mse_healthy": 1.0054811740067042
+}

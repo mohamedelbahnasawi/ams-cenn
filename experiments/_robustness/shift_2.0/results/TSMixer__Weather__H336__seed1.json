@@ -1,0 +1,20 @@
+{
+  "model": "TSMixer",
+  "dataset": "Weather",
+  "horizon": 336,
+  "seed": 1,
+  "kind": "shift",
+  "level": 2.0,
+  "mse": 4.28719985030474,
+  "mae": 2.0178086932536607,
+  "mse_clean": 0.25656533432198314,
+  "mae_clean": 0.2978776448094592,
+  "ratio_mse": 16.709973159992106,
+  "n_rows": 71999424,
+  "alias": "TSMixer",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TSMixer__Weather__H336__seed1"
+  }
+}

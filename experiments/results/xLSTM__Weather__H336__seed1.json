@@ -1,0 +1,33 @@
+{
+  "model": "xLSTM",
+  "dataset": "Weather",
+  "horizon": 336,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.24542833406681577,
+  "mae": 0.2986331559139734,
+  "train_time_s": 12515.8,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 411105,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "87fbfe4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-15T00:16:45.648364+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 5270,
+    "test_size": 10539,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32
+  }
+}

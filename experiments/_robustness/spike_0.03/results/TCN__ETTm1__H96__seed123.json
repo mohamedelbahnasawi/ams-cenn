@@ -1,0 +1,20 @@
+{
+  "model": "TCN",
+  "dataset": "ETTm1",
+  "horizon": 96,
+  "seed": 123,
+  "kind": "spike",
+  "level": 0.03,
+  "mse": 1.014709936047622,
+  "mae": 0.7925997812837161,
+  "mse_clean": 0.27558759242345954,
+  "mae_clean": 0.3429732444952267,
+  "ratio_mse": 3.6819870122761165,
+  "n_rows": 7677600,
+  "alias": "TCN",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TCN__ETTm1__H96__seed123"
+  }
+}

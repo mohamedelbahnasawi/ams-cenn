@@ -15,10 +15,14 @@ import json, sys
 from pathlib import Path
 from collections import defaultdict
 
+import sys
+from pathlib import Path as _P
+sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
 import numpy as np
 
 ROBUST_DIR = Path("experiments/_robustness")
-AMS = "CeNN_C1C2-Skip-K2"
+from experiments.config import CENN_MAIN_VARIANT  # noqa: E402
+AMS = f"CeNN_{CENN_MAIN_VARIANT}"
 # S4D dropped: no checkpoint was saved for its fp32 complex-kernel SSM,
 # so it cannot be evaluated without retraining. The four retained baselines span the
 # linear / mixer / transformer / conv families.
@@ -50,17 +54,36 @@ def main():
         print("No robustness results yet under", ROBUST_DIR); return
     # aggregate ratio over (model, dataset, kind, level) across seeds+horizons
     agg = defaultdict(list)
+    # dead-sensor family: the all-channel ratio is dominated by the dead channel itself (lost for
+    # every model); the diagnostic quantity is the HEALTHY-channel ratio (does the fault leak into
+    # the other channels?), stored per cell as ratio_mse_healthy and aggregated alongside.
+    agg_h = defaultdict(list)
     for d in rows:
         agg[(d["model"], d["dataset"], d["kind"], d["level"])].append(d.get("ratio_mse", np.nan))
+        if d["kind"] == "dead":
+            agg_h[(d["model"], d["dataset"], d["kind"], d["level"])].append(d.get("ratio_mse_healthy", np.nan))
     # write CSV
     out_csv = ROBUST_DIR / "robustness_degradation.csv"
-    lines = ["model,dataset,kind,level,mean_ratio,std_ratio,n"]
+    lines = ["model,dataset,kind,level,mean_ratio,std_ratio,n,mean_ratio_healthy,std_ratio_healthy"]
     for (m, ds, k, lv), vs in sorted(agg.items()):
         vs = [v for v in vs if v == v]
         if vs:
-            lines.append(f"{m},{ds},{k},{lv},{np.mean(vs):.5f},{np.std(vs):.5f},{len(vs)}")
+            hs = [v for v in agg_h.get((m, ds, k, lv), []) if v == v]
+            h_cols = f",{np.mean(hs):.5f},{np.std(hs):.5f}" if hs else ",,"
+            lines.append(f"{m},{ds},{k},{lv},{np.mean(vs):.5f},{np.std(vs):.5f},{len(vs)}{h_cols}")
     out_csv.write_text("\n".join(lines))
     print(f"wrote {out_csv} ({len(lines)-1} rows)\n")
+
+    # ---- dead-sensor family: healthy-channel ratio pooled over datasets/horizons/seeds ----
+    if agg_h:
+        print("DEAD-SENSOR containment (healthy-channel MSE ratio; 1.00 = the fault stays in its channel)")
+        models = sorted({m for (m, _, _, _) in agg_h})
+        for lv in sorted({lv for (_, _, _, lv) in agg_h}):
+            for m in models:
+                hs = [v for (mm, _, _, l), vs in agg_h.items() if mm == m and l == lv for v in vs if v == v]
+                if hs:
+                    print(f"  dead={lv}  {m:28s} {np.mean(hs):.3f}  (n={len(hs)})")
+        print()
 
     # ---- pre-registered verdict: AMS vs baseline-median at mid-high levels, per kind ----
     # model-level mean ratio at mid-high levels (pooled over datasets, horizons, seeds)

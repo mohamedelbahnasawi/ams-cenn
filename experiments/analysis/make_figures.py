@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from experiments.config import (EFFICIENCY_DIR, FIGURES_DIR, ARTIFACTS_DIR, HORIZONS,   # noqa: E402
                                 DATASETS_ALL, DATASETS_SMALL, DATASETS_HEADLINE,
-                                CENN_MAIN_VARIANT, CENN_DISPLAY_NAME, CENN_VARIANTS,
+                                CENN_MAIN_VARIANT, CENN_DISPLAY_NAME, CENN_VARIANTS, ROLES,
                                 CENN_VARIANTS_ABLATION, BASELINES_ALL, RESULTS_DIR, EXPERIMENTS_DIR)
 from experiments.aggregate import load_all_results                      # noqa: E402
 from experiments.runner import VARIANT_SPECS, _VARIANT_K                 # noqa: E402
@@ -50,8 +50,14 @@ def family_of(model):
 # Plain-English display names for CeNN variants — no internal codes in any figure.
 # Keyed by the bare variant (CeNN_ stripped). Anything not here falls back to the bare name.
 _VARIANT_LABEL = {
-    "C1C2-Skip-K2": CENN_DISPLAY_NAME,            # the headline (also handled in label_of)
-    "C1C2-Ensemble": f"{CENN_DISPLAY_NAME} (no skip)",
+    "AMS-Anc": CENN_DISPLAY_NAME,                 # the headline (also handled in label_of)
+    "C1C2-Anc": f"{CENN_DISPLAY_NAME} (no skip)",
+    "SkipOnly-Anc": "linear residual only",
+    "MLPSkip-Anc": "generic MLP trunk + residual",
+    "S0-Anc": "S0: stable base", "C1-Anc": "C1: bounded-τ gate", "C2-Anc": "C2: multi-scale",
+    "AMS-Anc-K4": "K=4 (Euler)", "AMS-Anc-K8": "K=8 (Euler)",
+    "C1C2-Skip-K2": f"{CENN_DISPLAY_NAME} (pipeline min-max)",   # the previously shipped configuration
+    "C1C2-Ensemble": f"{CENN_DISPLAY_NAME} (no skip, min-max)",
     "S0-StableBase": "S0: stable base",
     "C1-BoundedTau": "C1: bounded-τ gate",
     "C2-MultiScaleEnsemble": "C2: multi-scale",
@@ -256,12 +262,12 @@ def ablation_bars(df, datasets=None):
     # Include the -skip ablation (C1C2-Ensemble = the headline MINUS the zero-init linear skip) —
     # the single most important component bar for the AMS-CeNN headline — alongside the classic
     # ablations. (It lives in CENN_VARIANTS_MAIN, not _ABLATION, so it must be added explicitly.)
-    SKIP_ABL = "C1C2-Ensemble"
+    SKIP_ABL = ROLES["no_skip"]
     # Two clearly-separated questions in ONE figure (avoids the −remove / +add confusion):
     #   REMOVED  = take a real component OUT of AMS-CeNN -> Δ is its contribution.
     #   ALT      = swap in a design choice NOT used by AMS-CeNN -> Δ is "this alternative is worse by".
     # The K/integrator sweep is excluded (it has its own figure, fig_k_integrator).
-    REMOVED = {"C1C2-Ensemble", "ABL-GateParam-Unbounded", "ABL-SpectralCapOff"}
+    REMOVED = {ROLES["no_skip"], "C1C2-Ensemble", "ABL-GateParam-Unbounded", "ABL-SpectralCapOff"}
     arch = [v for v in CENN_VARIANTS_ABLATION if not v.startswith(("K2-", "K4-", "K8-"))]
     items = []
     for v in arch + [SKIP_ABL]:
@@ -360,8 +366,10 @@ def lsweep_fig(datasets=("ETTh1", "ETTh2", "Weather"), horizon=96):
         vs = [json.load(open(f))["mse"] for d in datasets
               for f in glob.glob(f"{root}/CeNN_{variant}__{d}__H{horizon}__*.json")]
         return statistics.mean(vs) if vs else None
-    ser = {CENN_DISPLAY_NAME: [m("C1C2-Skip-K2", L) for L in Ls],
-           f"{CENN_DISPLAY_NAME} (no skip)": [m("C1C2-Ensemble", L) for L in Ls]}
+    # The L-sweep was run on the pipeline min-max configuration (not repeated under the anchor);
+    # the legend says so.
+    ser = {f"{CENN_DISPLAY_NAME} (pipeline min-max)": [m("C1C2-Skip-K2", L) for L in Ls],
+           f"{CENN_DISPLAY_NAME} (pipeline min-max, no skip)": [m("C1C2-Ensemble", L) for L in Ls]}
     if any(v is None for vv in ser.values() for v in vv):
         print("[lsweep skipped: missing L cells]"); return None
     return plotting.fig_line_sensitivity(
@@ -482,7 +490,13 @@ def forecast_panels(specs, model=None):
             continue
         key = b.set_index(["uid", "cutoff"]).index
         bf = b[key.isin(full)].copy(); bf["se"] = (bf["y"] - bf["pred"]) ** 2
-        werr = bf.groupby(["uid", "cutoff"])["se"].mean()
+        g = bf.groupby(["uid", "cutoff"])
+        werr, ystd, ynun = g["se"].mean(), g["y"].std(), g["y"].nunique()
+        # Representative window = median-error window among the NON-DEGENERATE windows (truth
+        # std at or above the dataset median): ETTm2 has quantised, near-constant series whose
+        # median-error window is a flat line with a few jumps, which shows nothing about the
+        # forecast. Selection rule is stated in the figure caption. (2026-09-05)
+        werr = werr[(ystd >= ystd.median()) & (ynun >= 0.5 * H)]   # varying AND not quantised
         uid, cutoff = (werr - werr.median()).abs().idxmin()      # representative window
         sel = b[(b.uid == uid) & (b.cutoff == cutoff)].sort_values("ds")
         y_true, dsv = sel["y"].to_numpy(), sel["ds"].to_numpy()
@@ -495,6 +509,7 @@ def forecast_panels(specs, model=None):
             if len(s) == len(y_true) and np.array_equal(s["ds"].to_numpy(), dsv):
                 preds.append(s["pred"].to_numpy())
         Pm = np.vstack(preds); t = np.arange(1, len(y_true) + 1)
+        print(f"  [forecast window] {ds} H{H}: uid={uid} cutoff={cutoff} (window MSE {werr[(uid, cutoff)]:.3f}, truth std {ystd[(uid, cutoff)]:.3f})")
         panels.append({"dataset": ds, "title": f"{ds}, H={H}", "t": t, "y_true": y_true,
                        "y_pred": Pm.mean(0), "lo": Pm.min(0), "hi": Pm.max(0)})
     if not panels:
@@ -512,6 +527,10 @@ def contraction_figure(dataset, horizon):
         hits = sorted(glob.glob(str(aeff_dir / f"CeNN_{v}__{dataset}__H{horizon}__seed*.npz")))
         if not hits:
             continue
+        # Worst-case seed of the block (largest learned norm): the audit must show the cell where
+        # the cap is closest to (or actually) binding, not a seed-1 default. (2026-09-05)
+        hits = sorted(hits, key=lambda f: float(np.load(f)["raw"].max()), reverse=True)
+        print(f"[contraction: using {hits[0].split(chr(92))[-1].split(chr(47))[-1]} (largest learned norm of {len(hits)} seeds)]")
         d = np.load(hits[0])
         raw, capped, rho = d["raw"], d["capped"], float(d["rho"])
         amax = float(d["alpha_max"]) if "alpha_max" in d.files else float("nan")

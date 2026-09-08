@@ -1,0 +1,26 @@
+{
+  "model": "DLinear",
+  "dataset": "Weather",
+  "horizon": 720,
+  "seed": 42,
+  "kind": "dead",
+  "level": 1,
+  "mse": 0.3308745406623325,
+  "mae": 0.37137099156300457,
+  "mse_clean": 0.31912524429167405,
+  "mae_clean": 0.3603998829857531,
+  "ratio_mse": 1.0368171950694063,
+  "n_rows": 148478400,
+  "alias": "DLinear",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "DLinear__Weather__H720__seed42"
+  },
+  "dead_ids": [
+    "H2OC (mmol/mol)"
+  ],
+  "mse_healthy": 0.3197685389419026,
+  "mse_clean_healthy": 0.3197685389419026,
+  "ratio_mse_healthy": 1.0
+}

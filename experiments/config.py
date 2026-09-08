@@ -153,16 +153,24 @@ CENN_VARIANTS_APPENDIX = [
     "APP-MultiScale-Patch-MLP",
     "APP-MultiScale-MLP",
 ]
+# ANCHORED protocol (2026-09): in-model last-value anchor, no pipeline scaler, every variant.
+# Headline = AMS-Anc (mean rank 3.14 of 12 at 5 seeds vs 5.21 for the earlier min-max headline
+# C1C2-Skip-K2, which stays in the lists above as the normalization-ablation row).
+CENN_VARIANTS_ANCHORED = [
+    "AMS-Anc", "S0-Anc", "C1-Anc", "C2-Anc", "C1C2-Anc", "SkipOnly-Anc", "MLPSkip-Anc",
+    "AMS-Anc-K4", "AMS-Anc-K8", "FrozenSkip-TrainTrunk-Anc",
+    "AMS-Anc-STAR", "AMS-Anc-Pointwise", "AMS-Anc-VarMix", "AMS-Anc-G4",
+]
 # Flat union consumed by runner --cenn-all and aggregate.py.
-CENN_VARIANTS = CENN_VARIANTS_MAIN + CENN_VARIANTS_ABLATION + CENN_VARIANTS_APPENDIX
+CENN_VARIANTS = CENN_VARIANTS_MAIN + CENN_VARIANTS_ABLATION + CENN_VARIANTS_APPENDIX + CENN_VARIANTS_ANCHORED
 
 # Headline model (5 seeds; the main-table row + the prediction/branch/tau artifacts).
-# HEADLINE = AMS-CeNN = C1C2-Skip-K2: the C1C2 adaptive multi-scale ensemble plus a
+# HEADLINE = AMS-CeNN = the variant named by CENN_MAIN_VARIANT below (AMS-Anc); C1C2-Skip-K2 is the min-max ablation row.
 # zero-init linear residual ("skip") at K=2. The skip rescues the high-V failure and beats DLinear
 # on complex/long-horizon while tying elsewhere; top-3 of 11 on the full 7-dataset CD. K=2 (not K=8)
 # is accuracy-neutral ON THIS ARCHITECTURE (C1C2-Skip K8 vs K2: mean dMSE 0.0000 over 42 matched
 # cells) and 4x cheaper, so the headline runs at K=2.
-CENN_MAIN_VARIANT = "C1C2-Skip-K2"
+CENN_MAIN_VARIANT = "AMS-Anc"   # 2026-09-05: anchored protocol headline (was C1C2-Skip-K2, now the min-max ablation row)
 # The OLD headline C1C2-Ensemble (== C1C2-Skip-K2 MINUS the skip) is now THE -skip ablation:
 # removing the skip costs +0.030 MSE on ETT / +0.128 across all 7 (high-V driven). Because K is
 # neutral (above), C1C2-Ensemble's K=8 setting does not confound that single-knob comparison.
@@ -170,6 +178,20 @@ CENN_MAIN_VARIANT = "C1C2-Skip-K2"
 # everywhere via `model == f"CeNN_{CENN_MAIN_VARIANT}"` -> CENN_DISPLAY_NAME (make_tables._disp,
 # make_figures.label_of, aggregate). The internal result key IS C1C2-Skip-K2 (NOT C1C2-Ensemble).
 CENN_DISPLAY_NAME = "AMS-CeNN"
+# ROLE -> variant map (2026-09-05). Every table/figure script resolves ablation rows through this
+# instead of hardcoding variant keys, so a headline switch is one edit. All rows share the anchored
+# protocol (in-model last-value anchor, no pipeline scaler) except minmax_headline, which is the
+# previously shipped configuration kept as the normalization-ablation row.
+ROLES = {
+    "main": "AMS-Anc",
+    "s0": "S0-Anc", "c1": "C1-Anc", "c2": "C2-Anc", "no_skip": "C1C2-Anc",
+    "skip_only": "SkipOnly-Anc", "generic_trunk": "MLPSkip-Anc",
+    "k4": "AMS-Anc-K4", "k8": "AMS-Anc-K8",
+    "minmax_headline": "C1C2-Skip-K2",
+    "cross_channel": {"STAR": "AMS-Anc-STAR", "pointwise": "AMS-Anc-Pointwise",
+                      "varmix": "AMS-Anc-VarMix", "G4": "AMS-Anc-G4"},
+    "pilot_frozen_skip": "FrozenSkip-TrainTrunk-Anc",
+}
 # DATASETS_HEADLINE = the low-to-moderate-V regime (ETT + Weather). Used ONLY to scope the in-regime
 # figures (MSE boxplots, tau profile) where pooling the high-V datasets would inflate variance. The
 # MAIN results table and the CD diagram now span ALL 7 datasets -- the linear skip fixed the high-V
@@ -188,7 +210,7 @@ CENN_DATASET_SCALER = {"Weather": "identity"}
 # Inc-3 integrator/K constants (for reference and future sweep drivers):
 CENN_K_SWEEP     = [8, 4, 2]
 CENN_INTEGRATORS = ["euler", "exp_euler", "heun", "rk4"]
-# scaler_type is PER-VARIANT (all CeNN = 'minmax') in runner.VARIANT_SPECS, NOT the
+# scaler_type is PER-VARIANT (min-max-era CeNN variants = 'minmax', anchored variants = 'identity') in runner.VARIANT_SPECS, NOT the
 # global SCALER_TYPE (='identity', which baselines still use).
 
 # ---------------------------------------------------------------------------

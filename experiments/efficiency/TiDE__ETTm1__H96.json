@@ -1,0 +1,20 @@
+{
+  "model": "TiDE",
+  "dataset": "ETTm1",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 2429316,
+  "flops_fwd": 39438336,
+  "macs_fwd": 19719168.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 126.147,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 9.1173,
+  "peak_train_mb": 117.6,
+  "peak_infer_mb": 46.1,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

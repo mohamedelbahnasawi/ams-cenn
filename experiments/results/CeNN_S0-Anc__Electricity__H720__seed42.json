@@ -1,0 +1,40 @@
+{
+  "model": "CeNN_S0-Anc",
+  "dataset": "Electricity",
+  "horizon": 720,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.8526272782579006,
+  "mae": 0.6778047551000655,
+  "train_time_s": 145.8,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 418071,
+  "best_valid_loss": 0.6279259920120239,
+  "final_valid_loss": 0.6283584833145142,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "12af7f5",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-03T18:03:13.834170+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 2632,
+    "test_size": 5260,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 9,
+    "batch_size": 8,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

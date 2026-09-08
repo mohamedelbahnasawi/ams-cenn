@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-Scales-3",
+  "dataset": "Weather",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 377896,
+  "flops_fwd": 61704192,
+  "macs_fwd": 30852096.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 136.665,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 7.6172,
+  "peak_train_mb": 458.2,
+  "peak_infer_mb": 37.1,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

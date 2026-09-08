@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_SkipOnly-Anc",
+  "dataset": "Weather",
+  "horizon": 96,
+  "seed": 42,
+  "kind": "mask",
+  "level": 96,
+  "mse": 0.20583522711400024,
+  "mae": 0.2661673697131303,
+  "mse_clean": 0.16544868925271786,
+  "mae_clean": 0.22394639975825079,
+  "ratio_mse": 1.244103099539176,
+  "n_rows": 21055104,
+  "alias": "CeNN_SkipOnly-Anc",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_SkipOnly-Anc__Weather__H96__seed42"
+  }
+}

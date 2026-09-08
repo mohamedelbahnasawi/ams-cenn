@@ -1,0 +1,19 @@
+{
+  "model": "CeNN_SkipOnly-Anc",
+  "dataset": "ETTm2",
+  "horizon": 336,
+  "seed": 123,
+  "kind": "clean",
+  "level": 0,
+  "mse": 0.23432402249716294,
+  "mae": 0.3075067920380787,
+  "mse_clean": 0.23432402249716294,
+  "mae_clean": 0.3075067920380787,
+  "ratio_mse": 1.0,
+  "alias": "CeNN_SkipOnly-Anc",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_SkipOnly-Anc__ETTm2__H336__seed123"
+  }
+}

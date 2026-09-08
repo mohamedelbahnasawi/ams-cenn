@@ -1,0 +1,27 @@
+{
+  "model": "DLinear",
+  "dataset": "ETTh1",
+  "horizon": 336,
+  "seed": 1,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.7613471982660481,
+  "mae": 0.6201422534081449,
+  "mse_clean": 0.3736519656879944,
+  "mae_clean": 0.4124952433271011,
+  "ratio_mse": 2.03758381643785,
+  "n_rows": 5985840,
+  "alias": "DLinear",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "DLinear__ETTh1__H336__seed1"
+  },
+  "dead_ids": [
+    "MUFL",
+    "OT"
+  ],
+  "mse_healthy": 0.34501919723856905,
+  "mse_clean_healthy": 0.34501919723856905,
+  "ratio_mse_healthy": 1.0
+}

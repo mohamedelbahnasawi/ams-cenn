@@ -1,0 +1,36 @@
+{
+  "model": "CeNN_APP-MultiScale-MLP",
+  "dataset": "Weather",
+  "horizon": 192,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.30167248499689847,
+  "mae": 0.35757803312228403,
+  "train_time_s": 97.3,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 54805,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "95cb4b7",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-11T16:10:55.535490+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 5270,
+    "test_size": 10539,
+    "eval": "standard_fixed_split_stride1",
+    "batch_size": 32,
+    "cenn_K": 8,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  }
+}

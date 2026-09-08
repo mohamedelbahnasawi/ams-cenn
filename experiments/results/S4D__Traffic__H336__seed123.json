@@ -1,0 +1,33 @@
+{
+  "model": "S4D",
+  "dataset": "Traffic",
+  "horizon": 336,
+  "seed": 123,
+  "input_size": 512,
+  "mse": 1.2485883121937158,
+  "mae": 0.7478880579599235,
+  "train_time_s": 544.4,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 493870,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "e0c6dc4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-18T21:33:56.957675+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "32-true",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 4,
+    "batch_size": 4
+  }
+}

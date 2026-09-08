@@ -1,0 +1,27 @@
+{
+  "model": "TCN",
+  "dataset": "ETTm1",
+  "horizon": 720,
+  "seed": 1,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.8036682907438006,
+  "mae": 0.6212342126371789,
+  "mse_clean": 0.3666631068437875,
+  "mae_clean": 0.40209023588066395,
+  "ratio_mse": 2.191843890872266,
+  "n_rows": 54437040,
+  "alias": "TCN",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TCN__ETTm1__H720__seed1"
+  },
+  "dead_ids": [
+    "MUFL",
+    "OT"
+  ],
+  "mse_healthy": 0.33487715971326276,
+  "mse_clean_healthy": 0.33487715971326276,
+  "ratio_mse_healthy": 1.0
+}

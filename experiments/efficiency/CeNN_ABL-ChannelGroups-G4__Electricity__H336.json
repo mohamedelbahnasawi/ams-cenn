@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-ChannelGroups-G4",
+  "dataset": "Electricity",
+  "horizon": 336,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 225553,
+  "flops_fwd": 87926784,
+  "macs_fwd": 43963392.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 136.124,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 5.9143,
+  "peak_train_mb": 799.3,
+  "peak_infer_mb": 43.0,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

@@ -3,8 +3,8 @@
 Bug being fixed: the artifact stores tau = 1 - alpha (drive weight, model.py L247); the old
 figure plotted that ~0.10 value but labelled it "Retention alpha". RETENTION is alpha = 1 - tau ~= 0.90.
 
-Data: ETT+Weather = headline C1C2-Skip-K2 (regenerated on the 4090); ECL/Traffic = C1C2-Ensemble
-(headline minus the skip => identical C1 gate; retention is variant-independent, verified).
+Data (2026-09-05): the anchored headline CeNN_AMS-Anc on all seven datasets (canonical artifacts/tau,
+regenerated from the checkpoints by analysis/regen_artifacts.py).
 """
 import sys, os, glob, re
 import numpy as np
@@ -17,8 +17,12 @@ ANALYSIS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ANALYSIS)
 from plotting import apply_style, savefig, COL_W
 
-TAU = os.environ.get("TAU_DIR", os.path.join(os.path.dirname(ANALYSIS), "_tau_scratch", "artifacts", "tau"))
-OUT = os.environ.get("FIG_OUT_DIR", os.path.join(ANALYSIS, "figures"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(ANALYSIS)))
+from experiments.config import CENN_MAIN_VARIANT, FIGURES_DIR  # noqa: E402
+
+TAU = os.environ.get("TAU_DIR", os.path.join(os.path.dirname(ANALYSIS), "artifacts", "tau"))
+MODEL = f"CeNN_{CENN_MAIN_VARIANT}"   # anchored headline, all seven datasets under one name
+OUT = os.environ.get("FIG_OUT_DIR", str(FIGURES_DIR)); os.makedirs(OUT, exist_ok=True)
 SEVEN = ["ETTh1", "ETTh2", "ETTm1", "ETTm2", "Weather", "Electricity", "Traffic"]
 COLORS = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00", "#666666"]
 
@@ -26,7 +30,7 @@ pat = re.compile(r"CeNN_(.+?)__(.+?)__H(\d+)__seed(\w+)\.npz")
 byds = defaultdict(list)
 for f in sorted(glob.glob(os.path.join(TAU, "*.npz"))):
     m = pat.match(os.path.basename(f))
-    if m:
+    if m and "CeNN_" + m.group(1) == MODEL:
         byds[m.group(2)].append(f)
 
 profiles = {}
@@ -55,8 +59,8 @@ ax.set_title("Learned per-channel retention (AMS-CeNN)", fontsize=8.6)
 ax.legend(loc="lower right", fontsize=5.8, ncol=2, handletextpad=0.4, columnspacing=0.8, framealpha=0.92)
 ax.margins(x=0.02)
 allmean = float(np.mean([profiles[d].mean() for d in profiles]))
-savefig(fig, OUT, "fig05_tau_retention_v2")
-print("saved fig05_tau_retention_v2 ; per-dataset mean retention alpha:")
+savefig(fig, OUT, "fig05_tau_retention")
+print("saved fig05_tau_retention ; per-dataset mean retention alpha:")
 for ds in SEVEN:
     if ds in profiles:
         print("  %-12s alpha=%.4f  (channels=%d)" % (ds, float(profiles[ds].mean()), len(profiles[ds])))

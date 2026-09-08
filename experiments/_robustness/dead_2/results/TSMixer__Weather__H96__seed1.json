@@ -1,0 +1,27 @@
+{
+  "model": "TSMixer",
+  "dataset": "Weather",
+  "horizon": 96,
+  "seed": 1,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.209634719595968,
+  "mae": 0.2637350389896235,
+  "mse_clean": 0.1643868503429913,
+  "mae_clean": 0.2236416678877413,
+  "ratio_mse": 1.2752523645204439,
+  "n_rows": 21055104,
+  "alias": "TSMixer",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "TSMixer__Weather__H96__seed1"
+  },
+  "dead_ids": [
+    "Tdew (degC)",
+    "VPact (mbar)"
+  ],
+  "mse_healthy": 0.1710963213726987,
+  "mse_clean_healthy": 0.1712229881878126,
+  "ratio_mse_healthy": 0.9992602230783699
+}

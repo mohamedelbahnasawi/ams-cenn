@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_C1C2-Skip-K2",
+  "dataset": "ETTh2",
+  "horizon": 336,
+  "seed": 123,
+  "kind": "gauss",
+  "level": 0.1,
+  "mse": 0.33092992342555005,
+  "mae": 0.38201285456404677,
+  "mse_clean": 0.33085882103336256,
+  "mae_clean": 0.3815719666527232,
+  "ratio_mse": 1.0002149025132998,
+  "n_rows": 5985840,
+  "alias": "CeNN_C1C2-Skip-K2",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_C1C2-Skip-K2__ETTh2__H336__seed123"
+  }
+}

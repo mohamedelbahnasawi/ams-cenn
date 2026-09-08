@@ -12,14 +12,19 @@ run () { echo; echo "=== $* ==="; "$PY" "$@" || echo "[skipped/failed: $*]"; }
 run experiments/aggregate.py --status
 run experiments/aggregate.py --latex
 
-# 2. main tables (main results, ablation, generic-trunk, cross-channel, efficiency)
+# 2. main tables (main results, ablation build-up, generic-trunk, cross-channel, efficiency)
 run experiments/make_tables.py
+# 2b. manuscript-facing tables + every number quoted in the prose -> aggregated/paper_tables/
+run experiments/analysis/make_paper_tables.py
 
-# 3. core figures (CD diagram, no-champion heatmap, worst-case robustness, tau, contraction, forecasts)
+# 3. core figures (CD diagram, no-champion heatmap, worst-case robustness, contraction, forecasts,
+#    ablation build-up; tau retention and the forecast overlay need artifacts/, see regen_artifacts.py)
 run experiments/analysis/make_figures.py
+run experiments/analysis/make_ablation_buildup_fig.py
 run experiments/analysis/make_tau_all7.py
+run experiments/analysis/make_new1_overlay.py
 
-# 4. robustness + gate-variation + receptive-field figures
+# 4. robustness (incl. dead-sensor family) + gate-variation + receptive-field figures
 run experiments/analysis/aggregate_robustness.py
 run experiments/analysis/plot_robustness_gate.py
 run experiments/analysis/plot_receptive_field.py

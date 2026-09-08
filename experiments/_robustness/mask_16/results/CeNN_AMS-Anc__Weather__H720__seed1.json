@@ -1,0 +1,21 @@
+{
+  "model": "CeNN_AMS-Anc",
+  "dataset": "Weather",
+  "horizon": 720,
+  "seed": 1,
+  "kind": "mask",
+  "level": 16,
+  "mse": 0.3245243278107952,
+  "mae": 0.3615507208744225,
+  "mse_clean": 0.3245553921879227,
+  "mae_clean": 0.35044768603226645,
+  "ratio_mse": 0.9999042863625895,
+  "n_rows": 148478400,
+  "alias": "CeNN_AMS-Anc",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_PROBE-RevIN-LastOnly__Weather__H720__seed1"
+  },
+  "provenance_note": "copied from the robustness run of the same checkpoints (the same variant under its earlier name PROBE-RevIN-LastOnly == CeNN_AMS-Anc)"
+}

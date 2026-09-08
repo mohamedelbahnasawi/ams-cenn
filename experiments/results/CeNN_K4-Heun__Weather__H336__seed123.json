@@ -1,0 +1,36 @@
+{
+  "model": "CeNN_K4-Heun",
+  "dataset": "Weather",
+  "horizon": 336,
+  "seed": 123,
+  "input_size": 512,
+  "mse": 0.2967861825037215,
+  "mae": 0.34988529187954315,
+  "train_time_s": 107.8,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 182245,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "95cb4b7",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-11T00:26:44.706900+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 5270,
+    "test_size": 10539,
+    "eval": "standard_fixed_split_stride1",
+    "batch_size": 32,
+    "cenn_K": 4,
+    "integrator": "heun",
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

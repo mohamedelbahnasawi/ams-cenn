@@ -1,0 +1,40 @@
+{
+  "model": "CeNN_MLPSkip-Anc",
+  "dataset": "ETTh2",
+  "horizon": 96,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.24313585280951935,
+  "mae": 0.3248174889332106,
+  "train_time_s": 36.1,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 187413,
+  "best_valid_loss": 0.2921953797340393,
+  "final_valid_loss": 0.29856038093566895,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "12af7f5",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-03T00:15:37.140180+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 2880,
+    "test_size": 2880,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32,
+    "trunk_type": "mlp",
+    "cenn_K": null,
+    "integrator": null,
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

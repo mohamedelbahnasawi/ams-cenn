@@ -1,0 +1,26 @@
+{
+  "model": "CeNN_C1C2-Skip-K2",
+  "dataset": "Weather",
+  "horizon": 96,
+  "seed": 123,
+  "kind": "dead",
+  "level": 1,
+  "mse": 0.1985076195332466,
+  "mae": 0.25941161111058264,
+  "mse_clean": 0.16642046446119396,
+  "mae_clean": 0.23046763404965984,
+  "ratio_mse": 1.1928077485899262,
+  "n_rows": 21055104,
+  "alias": "CeNN_C1C2-Skip-K2",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_C1C2-Skip-K2__Weather__H96__seed123"
+  },
+  "dead_ids": [
+    "VPmax (mbar)"
+  ],
+  "mse_healthy": 0.1722594119786371,
+  "mse_clean_healthy": 0.17212427645573103,
+  "ratio_mse_healthy": 1.0007851043774225
+}

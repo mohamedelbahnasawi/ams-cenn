@@ -49,12 +49,13 @@ nbs/_extensions
 # --- CeNN fork additions ---
 .venv/
 data/
-experiments/results/
+# per-seed result JSONs of every run reported in the paper ARE tracked:
+#   experiments/results/, experiments/efficiency/, experiments/_robustness/
+!experiments/_robustness/robustness_degradation.csv
 experiments/checkpoints/
 experiments/published/
 experiments/aggregated/
 experiments/artifacts/
-experiments/efficiency/
 
 # debug scratch
 experiments/_probe_*

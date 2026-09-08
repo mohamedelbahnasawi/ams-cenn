@@ -1,0 +1,20 @@
+{
+  "model": "NHITS",
+  "dataset": "ETTm2",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 3763880,
+  "flops_fwd": 52584448,
+  "macs_fwd": 26292224.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 129.143,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 12.8394,
+  "peak_train_mb": 143.5,
+  "peak_infer_mb": 50.5,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

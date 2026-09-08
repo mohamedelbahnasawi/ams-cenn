@@ -1,0 +1,20 @@
+{
+  "model": "TimesNet",
+  "dataset": "Weather",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 1484321,
+  "flops_fwd": 150115768320,
+  "macs_fwd": 75057884160.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 135.534,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 41.5375,
+  "peak_train_mb": 239.8,
+  "peak_infer_mb": 74.8,
+  "precision": "32-true",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

@@ -1,0 +1,20 @@
+{
+  "model": "PatchTST",
+  "dataset": "ETTm2",
+  "horizon": 96,
+  "seed": 123,
+  "kind": "shift",
+  "level": 0.5,
+  "mse": 0.41494068139768253,
+  "mae": 0.5550755091263342,
+  "mse_clean": 0.14765339392663784,
+  "mae_clean": 0.24590048086967672,
+  "ratio_mse": 2.8102346337114836,
+  "n_rows": 7677600,
+  "alias": "PatchTST",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "PatchTST__ETTm2__H96__seed123"
+  }
+}

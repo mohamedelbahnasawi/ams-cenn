@@ -1,0 +1,20 @@
+{
+  "model": "iTransformer",
+  "dataset": "ETTm1",
+  "horizon": 336,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 308432,
+  "flops_fwd": 4322304,
+  "macs_fwd": 2161152.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 117.117,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 3.0246,
+  "peak_train_mb": 74.4,
+  "peak_infer_mb": 36.2,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

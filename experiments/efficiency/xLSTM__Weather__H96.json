@@ -1,0 +1,20 @@
+{
+  "model": "xLSTM",
+  "dataset": "Weather",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 287985,
+  "flops_fwd": 16276377600,
+  "macs_fwd": 8138188800.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 147.504,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 23.6304,
+  "peak_train_mb": 2151.1,
+  "peak_infer_mb": 958.5,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

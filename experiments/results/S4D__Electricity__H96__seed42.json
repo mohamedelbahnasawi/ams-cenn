@@ -1,0 +1,33 @@
+{
+  "model": "S4D",
+  "dataset": "Electricity",
+  "horizon": 96,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.689927216288203,
+  "mae": 0.600619500365095,
+  "train_time_s": 572.8,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 231713,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "e0c6dc4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-18T20:14:59.131000+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "32-true",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 2632,
+    "test_size": 5260,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 8
+  }
+}

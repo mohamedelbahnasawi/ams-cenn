@@ -1,0 +1,27 @@
+{
+  "model": "CeNN_C1C2-Skip-K2",
+  "dataset": "ETTh2",
+  "horizon": 336,
+  "seed": 123,
+  "kind": "dead",
+  "level": 2,
+  "mse": 1.2667051382473886,
+  "mae": 0.8229414339159615,
+  "mse_clean": 0.33085882103336256,
+  "mae_clean": 0.3815719666527232,
+  "ratio_mse": 3.8285366981938767,
+  "n_rows": 5985840,
+  "alias": "CeNN_C1C2-Skip-K2",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_C1C2-Skip-K2__ETTh2__H336__seed123"
+  },
+  "dead_ids": [
+    "HULL",
+    "OT"
+  ],
+  "mse_healthy": 0.8441185219134353,
+  "mse_clean_healthy": 0.37266306893734374,
+  "ratio_mse_healthy": 2.265098401943762
+}

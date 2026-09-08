@@ -437,7 +437,13 @@ def fig_contraction(curves, outdir, name="fig_contraction", xlabel="Training ste
         axn.axhline(rho, color="0.45", ls="--", lw=0.9, label=rf"spectral cap $\rho$={rho:g}")
     axn.set_ylim(0, max(1.12, ymax * 1.08))
     axn.set_xlabel(xlabel); axn.set_ylabel(r"Operator norm $\|A_{\mathrm{eff}}\|$")
-    axn.set_title("Effective operator norm (cap is slack)", fontsize=8.3)
+    _lab = [k for k in curves if "Learned" in k]
+    if _lab:   # cap binds on at least one channel: learned and effective curves differ
+        _raw, _cap = curves[_lab[0]][1], [v for k, v in curves.items() if "Effective" in k][0][1]
+        _nb = int((_raw > _cap + 1e-6).sum())
+        axn.set_title(f"Effective operator norm (cap binds on {_nb} of {len(_raw)} channels)", fontsize=8.3)
+    else:
+        axn.set_title("Effective operator norm (cap is slack)", fontsize=8.3)
     axn.legend(fontsize=6.4, loc="center right", labelspacing=0.3, handletextpad=0.4, framealpha=0.9)
     if fac:
         allf = np.concatenate([np.asarray(v[1], float) for v in fac.values()])
@@ -583,7 +589,9 @@ def fig_robustness(items, outdir, name="fig_robustness", highlight="AMS-CeNN", c
     ax.invert_yaxis()
     ax.set_xlim(0, cap * 1.12)
     ax.set_xlabel("Worst-case error across the 7 datasets (% above the best model)")
-    ax.set_title("Robustness: worst-case error across the 7 datasets\n(AMS-CeNN lowest at 6.5%; most "
+    hl_val = dict(zip(labels, vals)).get(highlight)
+    hl_txt = f"{highlight} lowest at {hl_val:.1f}%; " if hl_val is not None and hl_val == min(vals) else ""
+    ax.set_title("Robustness: worst-case error across the 7 datasets\n(" + hl_txt + "most "
                  "baselines fail badly on $\\geq$1 dataset)", fontsize=8.2)
     return savefig(fig, outdir, name)
 

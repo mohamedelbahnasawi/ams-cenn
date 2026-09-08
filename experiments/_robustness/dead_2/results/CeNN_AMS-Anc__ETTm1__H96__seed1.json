@@ -1,0 +1,27 @@
+{
+  "model": "CeNN_AMS-Anc",
+  "dataset": "ETTm1",
+  "horizon": 96,
+  "seed": 1,
+  "kind": "dead",
+  "level": 2,
+  "mse": 0.7096030608163694,
+  "mae": 0.5679025084527889,
+  "mse_clean": 0.2557681304297678,
+  "mae_clean": 0.32259670826914205,
+  "ratio_mse": 2.7743998426388057,
+  "n_rows": 7677600,
+  "alias": "CeNN_PROBE-RevIN-LastOnly",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_AMS-Anc__ETTm1__H96__seed1"
+  },
+  "dead_ids": [
+    "MUFL",
+    "OT"
+  ],
+  "mse_healthy": 0.24332132031330586,
+  "mse_clean_healthy": 0.24489676299330101,
+  "ratio_mse_healthy": 0.9935669109679566
+}

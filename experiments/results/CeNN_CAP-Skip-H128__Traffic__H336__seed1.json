@@ -1,0 +1,38 @@
+{
+  "model": "CeNN_CAP-Skip-H128",
+  "dataset": "Traffic",
+  "horizon": 336,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.35277441265301446,
+  "mae": 0.28352845585917,
+  "train_time_s": 209.2,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 588030,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "e0c6dc4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-19T09:25:17.725259+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 4,
+    "batch_size": 4,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "model": "TiDE",
+  "dataset": "Weather",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 13052916,
+  "flops_fwd": 672666624,
+  "macs_fwd": 336333312.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 156.185,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 39.5214,
+  "peak_train_mb": 329.9,
+  "peak_infer_mb": 102.1,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

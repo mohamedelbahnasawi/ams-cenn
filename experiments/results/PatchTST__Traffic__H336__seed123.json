@@ -1,0 +1,33 @@
+{
+  "model": "PatchTST",
+  "dataset": "Traffic",
+  "horizon": 336,
+  "seed": 123,
+  "input_size": 512,
+  "mse": 0.3459410472287477,
+  "mae": 0.27992884366796067,
+  "train_time_s": 190.0,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 1531731,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "e0c6dc4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-19T03:52:15.897705+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 4,
+    "batch_size": 4
+  }
+}

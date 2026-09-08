@@ -1,19 +1,24 @@
 """Generate the two chunk-2 figures for Paper A:
   fig08_robustness.pdf  — degradation curves (contamination robustness)
   fig09_gate_adaptation.pdf — gate-variation: pointwise vs context gate (the "Adaptive" answer)
-Outputs straight into the ACCESS manuscript dir. Run with the repo venv python.
+Outputs go to experiments/aggregated/figures/.
 """
 import csv, os
 from collections import defaultdict
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import sys
+from pathlib import Path as _P
+sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
+from experiments.config import FIGURES_DIR  # noqa: E402
+OUT = str(FIGURES_DIR); os.makedirs(OUT, exist_ok=True)
 import numpy as np
 
 ROBUST_CSV = "experiments/_robustness/robustness_degradation.csv"
-OUT = r"aggregated/figures"
 
-AMS = "CeNN_C1C2-Skip-K2"
+from experiments.config import CENN_MAIN_VARIANT  # noqa: E402
+AMS = f"CeNN_{CENN_MAIN_VARIANT}"
 MODELS = [AMS, "DLinear", "TSMixer", "PatchTST", "TCN"]
 LABEL = {AMS: "AMS-CeNN", "DLinear": "DLinear", "TSMixer": "TSMixer",
          "PatchTST": "PatchTST", "TCN": "TCN"}

@@ -1,0 +1,41 @@
+{
+  "model": "CeNN_AMS-Anc",
+  "dataset": "Traffic",
+  "horizon": 192,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.3373296681949849,
+  "mae": 0.27550176447508046,
+  "train_time_s": 193.5,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 316698,
+  "best_valid_loss": 0.23300933837890625,
+  "final_valid_loss": 0.23300933837890625,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "3696272",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-02T17:39:58.156312+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 5,
+    "batch_size": 4,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  },
+  "provenance_note": "copied from a run of the identical specification (the same variant under its earlier name PROBE-RevIN-LastOnly: revin=last_only, identity scaler, K=2; training is deterministic)"
+}

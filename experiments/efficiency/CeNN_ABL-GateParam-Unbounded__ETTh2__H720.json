@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-GateParam-Unbounded",
+  "dataset": "ETTh2",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 377431,
+  "flops_fwd": 61265920,
+  "macs_fwd": 30632960.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 135.494,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 5.3294,
+  "peak_train_mb": 678.1,
+  "peak_infer_mb": 38.9,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

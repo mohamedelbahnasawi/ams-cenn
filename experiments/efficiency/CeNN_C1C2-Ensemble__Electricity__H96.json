@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_C1C2-Ensemble",
+  "dataset": "Electricity",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 97441,
+  "flops_fwd": 39137280,
+  "macs_fwd": 19568640.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 123.744,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 8.9769,
+  "peak_train_mb": 686.5,
+  "peak_infer_mb": 39.5,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

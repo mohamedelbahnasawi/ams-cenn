@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_SkipOnly-Anc",
+  "dataset": "ETTh1",
+  "horizon": 720,
+  "seed": 42,
+  "kind": "mask",
+  "level": 96,
+  "mse": 0.41069359235550085,
+  "mae": 0.46013656505207245,
+  "mse_clean": 0.37430470864021037,
+  "mae_clean": 0.4273292519977724,
+  "ratio_mse": 1.097217274790599,
+  "n_rows": 10891440,
+  "alias": "CeNN_SkipOnly-Anc",
+  "source": "robustness",
+  "provenance": {
+    "python": "3.12.13",
+    "ckpt": "CeNN_SkipOnly-Anc__ETTh1__H720__seed42"
+  }
+}
