@@ -6,7 +6,7 @@ K micro-steps it has seen K*d + 1 steps (3, 5, 9, 17 at K=2; verified on the tra
 impulse test), whereas the two Linear(L -> H) maps of the model (the projection layer inside the
 cellular path and the linear residual) each span the full L=512 lookback. The x axis is the position
 in the window counted back from the current step (1 = current step) on a log scale, so that the short
-cellular reaches and the 512-step linear maps are legible on one plot; a bar therefore runs from 1 to
+cellular receptive fields and the 512-step linear maps are legible on one plot; a bar therefore runs from 1 to
 the last step the component sees.
 """
 import os, sys
@@ -54,4 +54,4 @@ for d in OUT_DIRS:
     fig.savefig(out, bbox_inches="tight")
     fig.savefig(out.replace(".pdf", ".png"), dpi=200, bbox_inches="tight")
     print("wrote", out)
-print("branch reaches:", rf)
+print("branch receptive fields:", rf)
