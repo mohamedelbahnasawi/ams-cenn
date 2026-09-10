@@ -24,7 +24,7 @@ K, L = 2, 512
 dils = [1, 2, 4, 8]
 rf = {d: K * d + 1 for d in dils}   # 3, 5, 9, 17
 
-rows = [("projection layer and\nlinear residual ($L \\to H$)", L, "#E8772E")]
+rows = [("temporal projection and\nlinear residual ($L \\to H$)", L, "#E8772E")]
 for d in reversed(dils):
     rows.append((f"cell branch, $d={d}$", rf[d], "#4C72B0"))
 
