@@ -19,8 +19,8 @@ protocol). No manual download needed.
 `input_size=512`, horizons `{96,192,336,720}`, fixed train/val/test splits, stride-1 sliding-window
 evaluation, `max_steps=1000`. Seeds: baselines `{1,42,123}`; headline AMS-CeNN `{1,42,123,7,2026}`.
 No pipeline scaler is applied to any method (`scaler_type="identity"`): the headline AMS-CeNN
-variant `AMS-Anc` anchors each window to its last value inside the model (`revin=True,
-revin_mode="last_only"`), and the baselines that carry an in-model instance normalization keep it.
+variant `AMS-Anc` (the code's key for the last-value-normalization configuration, LVN in the paper)
+normalizes each window to its last value inside the model (`revin=True, revin_mode="last_only"`), and the baselines that carry an in-model instance normalization keep it.
 `CENN_MAIN_VARIANT` and the `ROLES` map in `config.py` name the headline and every ablation row;
 the earlier min-max configuration `C1C2-Skip-K2` is kept as the normalization-ablation row.
 

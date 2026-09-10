@@ -6,11 +6,11 @@
 
 A recurrent, dynamical-systems forecaster for **multivariate long-horizon time series forecasting**, built on a Cellular Neural Network (CeNN) substrate and integrated into [Nixtla NeuralForecast](https://github.com/Nixtla/neuralforecast).
 
-AMS-CeNN is a **parameter-auditable nonlinear residual forecaster with a stability-certified cellular recurrence**: a bounded cellular recurrent module adds controlled nonlinear dynamics around a strong full-lookback linear forecasting path, which is the primary accuracy driver. Every window is anchored inside the model to its last observed value (an NLinear-style, per-channel, invertible transform), so no pipeline scaler is applied. It combines three components:
+AMS-CeNN is a **parameter-auditable nonlinear residual forecaster with a stability-certified cellular recurrence**: a bounded cellular recurrent module adds controlled nonlinear dynamics around a strong full-lookback linear forecasting path, which is the primary accuracy driver. Every window is normalized inside the model to its last observed value (last-value normalization, LVN: an NLinear-style, per-channel, invertible transform), so no pipeline scaler is applied. It combines three components:
 
 - **C1 — Bounded, stability-certified integration gate.** A learned, per-channel gate whose output is bounded by construction, giving a **provable per-step contraction guarantee** on the cellular hidden-state recurrence (a local guarantee, not a full-network one) at no measurable accuracy cost. The learned gate converges to a near-uniform regime: its value is the certified stability and auditability it provides, not input adaptation.
 - **C2 — Multi-scale dilation ensemble.** Parallel CeNN branches at dilations {1, 2, 4, 8} that provide multi-resolution nonlinear refinement in a single forward pass.
-- **Anchored, zero-initialized linear residual.** A full-lookback linear map on the last-value-anchored window, initialized to zero, so the model begins as a pure CeNN and can fall back to a near-linear forecast on linearly dominated series. Ablations show this residual carries the accuracy: on its own it reaches mean rank 3.75 of 12, and the cellular pathway on top of it is accuracy-neutral. The anchor also confines a dead input channel to that channel (healthy-channel error ratio 0.999 under a stuck sensor).
+- **Zero-initialized linear residual on the last-value-normalized window.** A full-lookback linear map on the LVN window, initialized to zero, so the model begins as a pure CeNN and can fall back to a near-linear forecast on linearly dominated series. Ablations show this residual carries the accuracy: on its own it reaches mean rank 3.75 of 12, and the cellular pathway on top of it is accuracy-neutral. LVN also confines a dead input channel to that channel (healthy-channel error ratio 0.999 under a stuck sensor).
 
 <p align="center">
   <img src="assets/architecture.png" width="100%" alt="AMS-CeNN architecture">
@@ -20,7 +20,7 @@ AMS-CeNN is a **parameter-auditable nonlinear residual forecaster with a stabili
 
 Evaluated across **seven standard multivariate LTSF benchmarks** (ETT, Weather, Electricity, Traffic) at horizons {96, 192, 336, 720}, under a uniform protocol (lookback `L = 512`; Friedman + Nemenyi over `N = 28` dataset–horizon blocks):
 
-- **Accuracy** — ranks **1st of 12** methods (Friedman mean rank 3.14; PatchTST 4.54, TSMixer 4.61 and DLinear 4.93 lie inside the Nemenyi critical difference of 3.15, the other eight are significantly worse) and is non-inferior to every baseline at a pre-registered 2 % margin. The ranking gain over the earlier min-max configuration (4th, mean rank 5.21, kept as an ablation row) is carried by the anchored linear residual, not by the cellular pathway.
+- **Accuracy** — ranks **1st of 12** methods (Friedman mean rank 3.14; PatchTST 4.54, TSMixer 4.61 and DLinear 4.93 lie inside the Nemenyi critical difference of 3.15, the other eight are significantly worse) and is non-inferior to every baseline at a pre-registered 2 % margin. The ranking gain over the earlier min-max configuration (4th, mean rank 5.21, kept as an ablation row) is carried by the linear residual on the LVN window, not by the cellular pathway.
 - **Robustness** — attains the **lowest worst-case relative error of all 12 evaluated models** (within 6.3 % of the best method on every dataset), degrades less than the baseline median under additive noise, outliers and missing blocks, and confines a dead sensor to its own channel; it degrades more than the median under gain errors and level shifts, and is not claimed robust to gross distribution shift.
 - **Auditability** — the learned gate retention and feedback operator norms are directly readable from the trained parameters and tied to the contraction guarantee; the spectral cap binds in one of 8,960 audited branch-channel pairs across the 35 audited cells.
 - **Footprint** — parameter-light (106,197 parameters at ETTh1, H = 96; 5.3 M multiply-accumulates; 4.65 ms per multivariate forecast on an RTX 4090). Its multiply-accumulate count and latency exceed the linear baselines, so the model is not positioned as compute-efficient.
@@ -55,7 +55,7 @@ model = CeNN(
     adaptive_tau=True,                     # C1: bounded, input-conditioned gate (stability mechanism)
     multiscale_mode="parallel_ensemble",   # C2: parallel dilation ensemble {1, 2, 4, 8}
     linear_skip=True,                      # zero-initialized linear residual
-    revin=True, revin_mode="last_only",    # in-model last-value anchor + per-channel affine
+    revin=True, revin_mode="last_only",    # in-model last-value normalization (LVN) + per-channel affine
     scaler_type="identity",                # no pipeline scaler
     alpha_min=0.5, alpha_max=0.99,         # bounded gate -> per-step contraction
     spectral_cap=True, spectral_rho=0.9,
