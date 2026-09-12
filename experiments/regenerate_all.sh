@@ -29,4 +29,10 @@ run experiments/analysis/aggregate_robustness.py
 run experiments/analysis/plot_robustness_gate.py
 run experiments/analysis/plot_receptive_field.py
 
+# 5. regret distribution, appendix figures, cellular contribution, control summaries
+run experiments/analysis/plot_regret_distribution.py
+run experiments/analysis/make_appendix_figs.py
+run experiments/analysis/plot_cell_contribution.py
+run experiments/analysis/lvn_ablation_summary.py
+
 echo; echo "=== regeneration done. Tables/figures written under experiments/aggregated/. ==="

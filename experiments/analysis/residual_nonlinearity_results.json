@@ -1,0 +1,172 @@
+{
+  "CeNN_SkipOnly-Anc|ETTh1|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 7.803650679029885e-30,
+    "pred_h1": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": 0.04687900675263501,
+      "r2_mlp": -0.17664180036479427
+    },
+    "pred_hH": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.10043655282588193,
+      "r2_mlp": -0.37955721445987
+    }
+  },
+  "CeNN_SkipOnly-Anc|ETTh2|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 1.745605527411654e-38,
+    "pred_h1": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.01387956401103918,
+      "r2_mlp": -0.12693727321447912
+    },
+    "pred_hH": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.10351037942702601,
+      "r2_mlp": -0.18038272691784552
+    }
+  },
+  "CeNN_SkipOnly-Anc|ETTm1|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 8.47519710472059e-205,
+    "pred_h1": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": 0.006339338663890692,
+      "r2_mlp": -0.053450473023426204
+    },
+    "pred_hH": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": 0.01923813301491717,
+      "r2_mlp": -0.034262599930722226
+    }
+  },
+  "CeNN_SkipOnly-Anc|ETTm2|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 1.0873090877546276e-102,
+    "pred_h1": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": -0.00791462450079261,
+      "r2_mlp": -0.019403133822920804
+    },
+    "pred_hH": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": -0.013616515177907518,
+      "r2_mlp": -0.028432875349359232
+    }
+  },
+  "CeNN_SkipOnly-Anc|Weather|H96|seed1": {
+    "bds_n_channels": 21,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 0.0,
+    "pred_h1": {
+      "n_train": 152817,
+      "n_test": 65499,
+      "r2_linear": 0.05184845650464376,
+      "r2_mlp": 0.03269484273661405
+    },
+    "pred_hH": {
+      "n_train": 152817,
+      "n_test": 65499,
+      "r2_linear": 0.02378822659105284,
+      "r2_mlp": 0.10290898689582895
+    }
+  },
+  "CeNN_AMS-Anc|ETTh1|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 4.334262671381678e-33,
+    "pred_h1": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": 0.04211078214817199,
+      "r2_mlp": -0.21485679888311848
+    },
+    "pred_hH": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.09129147933826154,
+      "r2_mlp": -0.2512886010880573
+    }
+  },
+  "CeNN_AMS-Anc|ETTh2|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 7.45982568863111e-39,
+    "pred_h1": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.015476896517478078,
+      "r2_mlp": -0.12338224574188272
+    },
+    "pred_hH": {
+      "n_train": 13405,
+      "n_test": 5754,
+      "r2_linear": -0.13773514685053323,
+      "r2_mlp": -0.25401234768776426
+    }
+  },
+  "CeNN_AMS-Anc|ETTm1|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 8.230403373228158e-218,
+    "pred_h1": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": 0.009121952397515232,
+      "r2_mlp": -0.050813349572102595
+    },
+    "pred_hH": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": 0.006017936771126053,
+      "r2_mlp": -0.020964058684276754
+    }
+  },
+  "CeNN_AMS-Anc|ETTm2|H96|seed1": {
+    "bds_n_channels": 7,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 2.7807893230895893e-105,
+    "pred_h1": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": -0.006890929820140279,
+      "r2_mlp": -0.02039923449238712
+    },
+    "pred_hH": {
+      "n_train": 55741,
+      "n_test": 23898,
+      "r2_linear": -0.016529459636773325,
+      "r2_mlp": -0.026869281877544893
+    }
+  },
+  "CeNN_AMS-Anc|Weather|H96|seed1": {
+    "bds_n_channels": 21,
+    "bds_frac_reject_5pct": 1.0,
+    "bds_median_p": 0.0,
+    "pred_h1": {
+      "n_train": 152817,
+      "n_test": 65499,
+      "r2_linear": -0.006722667764811785,
+      "r2_mlp": -0.01562515626338934
+    },
+    "pred_hH": {
+      "n_train": 152817,
+      "n_test": 65499,
+      "r2_linear": 0.015786955485862397,
+      "r2_mlp": 0.04797000721400657
+    }
+  }
+}

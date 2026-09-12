@@ -83,7 +83,7 @@ python -m experiments.runner --models CeNN_AMS-Anc \
 bash experiments/regenerate_all.sh
 ```
 
-Each run writes one JSON per `(model, dataset, horizon, seed)` under `experiments/results/` (skip-if-exists, so campaigns are resumable). **The per-seed result JSONs of every run reported in the paper are included in this repository** (`experiments/results/`, `experiments/efficiency/`, `experiments/_robustness/`), so every table and figure can be regenerated without retraining. The robustness, gate-variation, cross-channel, and receptive-field studies are driven by `experiments/run_robustness.py`, `experiments/run_gate_probe.py`, and the scripts under `experiments/analysis/`.
+Each run writes one JSON per `(model, dataset, horizon, seed)` under `experiments/results/` (skip-if-exists, so campaigns are resumable). Version 1.2.0 adds the control and appendix result data (stability and integrator ablations, lookback sweep, variable-count sweep, training-budget controls, normalization A/B, synthetic nonlinear tests); see `experiments/REPRODUCE.md`, section 3b. **The per-seed result JSONs of every run reported in the paper are included in this repository** (`experiments/results/`, `experiments/efficiency/`, `experiments/_robustness/`), so every table and figure can be regenerated without retraining. The robustness, gate-variation, cross-channel, and receptive-field studies are driven by `experiments/run_robustness.py`, `experiments/run_gate_probe.py`, and the scripts under `experiments/analysis/`.
 
 ## Citation
 

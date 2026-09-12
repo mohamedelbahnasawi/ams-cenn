@@ -300,7 +300,7 @@ VARIANT_SPECS = {
     "PROBE-RevIN-Dropout0":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "dropout": 0.0},
     "PROBE-RevIN-Last":           {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last"},       # NLinear anchor + std
     "PROBE-RevIN-LastOnly":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_only"},  # NLinear anchor, no std
-    # Contamination probe arms (2026-09-02): recover the bounded-input robustness min-max gave.
+    # Contamination probe arms: recover the bounded-input robustness min-max gave.
     "PROBE-LastMAD":              {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_mad"},
     "PROBE-LastOnly-Squash":      {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_only", "trunk_squash": True},
     "PROBE-LastMAD-Squash":       {**_VARIANT_BASE, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "revin": True, "revin_mode": "last_mad", "trunk_squash": True},
@@ -315,17 +315,24 @@ VARIANT_SPECS = {
     "C1-Anc":                     {**_VARIANT_BASE, **_ANCH},                                                                                     # + bounded gate
     "C2-Anc":                     {**_VARIANT_BASE, **_ANCH, "adaptive_tau": False, "multiscale_mode": "parallel_ensemble"},                      # + multi-scale
     "C1C2-Anc":                   {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble"},                                             # -skip ablation
+    # Stability ablations on the headline: gate bounds widened to [0, 1] (cap kept) / template-norm cap removed.
+    "AMS-Anc-GateUnbounded":      {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "alpha_min": 0.0, "alpha_max": 1.0},
+    "AMS-Anc-CapOff":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "spectral_cap": False},
+    # Integrator check at the shipped K=2: Heun, exponential Euler, RK4 on the headline.
+    "AMS-Anc-Heun":               {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "integrator": "heun"},
+    "AMS-Anc-ExpEuler":           {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "integrator": "exp_euler"},
+    "AMS-Anc-RK4":                {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "integrator": "rk4"},
     "SkipOnly-Anc":               {**_VARIANT_BASE, **_ANCH, "trunk_type": "none", "linear_skip": True},                                          # == NLinear
     "MLPSkip-Anc":                {**_VARIANT_BASE, **_ANCH, "trunk_type": "mlp", "linear_skip": True},                                           # generic-trunk control
     "AMS-Anc-K4":                 {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True},                       # K-curve
     "AMS-Anc-K8":                 {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True},                       # K-curve
     "FrozenSkip-TrainTrunk-Anc":  {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
                                    "warm_start_from": "SkipOnly-Anc", "freeze": "skip"},                                                         # pathway pilot
-    # Seasonal-dilation probe (2026-09-03): branches aligned to the data's periods instead of
+    # Seasonal-dilation probe: branches aligned to the data's periods instead of
     # powers of two. Resolved per dataset frequency in build_cenn (dilations_by_freq -> dilations).
     "AMS-Anc-Seas":               {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True,
                                    "dilations_by_freq": {"h": [1, 24, 48, 168], "15min": [1, 96, 192, 672], "10min": [1, 144, 288, 1008]}},
-    # Hardware probe (2026-09-03): the in-block LayerNorm replaced by a per-channel affine / nothing.
+    # Hardware probe: the in-block LayerNorm replaced by a per-channel affine / nothing.
     "AMS-Anc-Affine":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "block_norm": "affine"},
     "AMS-Anc-NoNorm":             {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "block_norm": "none"},
     "AMS-Anc-STAR":               {**_VARIANT_BASE, **_ANCH, "multiscale_mode": "parallel_ensemble", "linear_skip": True, "cross_var": "star"},
@@ -410,6 +417,7 @@ _VARIANT_K = {
     "PROBE-LastMAD": 2, "PROBE-LastOnly-Squash": 2, "PROBE-LastMAD-Squash": 2,
     "AMS-Anc": 2, "S0-Anc": 2, "C1-Anc": 2, "C2-Anc": 2, "C1C2-Anc": 2, "SkipOnly-Anc": 2, "MLPSkip-Anc": 2,
     "AMS-Anc-K4": 4, "AMS-Anc-K8": 8, "FrozenSkip-TrainTrunk-Anc": 2,
+    "AMS-Anc-GateUnbounded": 2, "AMS-Anc-CapOff": 2, "AMS-Anc-Heun": 2, "AMS-Anc-ExpEuler": 2, "AMS-Anc-RK4": 2,
     "AMS-Anc-STAR": 2, "AMS-Anc-Pointwise": 2, "AMS-Anc-VarMix": 2, "AMS-Anc-G4": 2, "AMS-Anc-Seas": 2, "AMS-Anc-Affine": 2, "AMS-Anc-NoNorm": 2,
     "C1C2-Skip-K2-STAR": 2, "C1C2-Skip-K2-Pointwise": 2,  # cross-channel variants on headline (K=2)
     "C1C2-Skip-K2-VarMix": 2, "C1C2-Skip-K2-G4": 2,

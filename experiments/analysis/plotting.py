@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Research-grade figures for this work — built on SciencePlots `ieee` style.
+"""Research-grade figures for the paper, built on SciencePlots `ieee` style.
 
 Quality bar: SciencePlots ieee base (Times font, IEEE geometry) + readable sizes (no tiny
 text), colorblind-safe palette, Title-Case legends, label-repulsion with leader lines (no
@@ -206,18 +206,18 @@ def fig_cd_diagram(mean_ranks, cd, outdir, name="fig_cd_diagram", note=None):
     items = sorted(mean_ranks.items(), key=lambda kv: kv[1])
     names = [k for k, _ in items]; ranks = [v for _, v in items]
     n = len(names); lo, hi = 1, n
-    STEP = 0.30                                     # compact row gap; width de-knots in x
+    STEP = 0.33                                     # balanced row gap: compact enough not to run long, loose enough to avoid the dense leader-line smear
     y0 = n / 2 + 1.0
     n_left = math.ceil(n / 2)                       # labels i=0..n_left-1 go left
     lowest = y0 - 0.5 - (n_left - 1) * STEP         # y of the lowest (deepest) label row
-    fig, ax = plt.subplots(figsize=(FULL_W * 0.98, STEP * n + 0.35))  # wide + short, tight margins
+    fig, ax = plt.subplots(figsize=(COL_W, STEP * n + 0.55))  # SINGLE-COLUMN: generated at column width so it displays ~1:1 (no 2x shrink that shrank the labels)
     ax.set_xlim(lo - 0.6, hi + 0.6)
     ax.set_ylim(lowest - 0.28, y0 + 0.6)            # tight top/bottom margins (kills white space)
     ax.axis("off")
-    ax.plot([lo, hi], [y0, y0], "k-", lw=1.2)               # rank axis
+    ax.plot([lo, hi], [y0, y0], "k-", lw=1.5)               # rank axis (bolder scale)
     for r in range(lo, hi + 1):
-        ax.plot([r, r], [y0, y0 + 0.08], "k-", lw=1.0)
-        ax.text(r, y0 + 0.18, str(r), ha="center", fontsize=7)
+        ax.plot([r, r], [y0, y0 + 0.10], "k-", lw=1.2)
+        ax.text(r, y0 + 0.22, str(r), ha="center", fontsize=9.5)
     # place labels: left half on the left, right half on the right
     for i, (nm, rk) in enumerate(zip(names, ranks)):
         left = i < n / 2
@@ -228,7 +228,7 @@ def fig_cd_diagram(mean_ranks, cd, outdir, name="fig_cd_diagram", note=None):
         ax.plot([rk, rk], [y0, yy], "-", color=lc, lw=1.1 if is_hl else 0.8)
         ax.plot([rk, xend], [yy, yy], "-", color=lc, lw=1.1 if is_hl else 0.8)
         ax.text(xend + (-0.12 if left else 0.12), yy, f"{nm} ({rk:.2f})",
-                ha="right" if left else "left", va="center", fontsize=7.6,
+                ha="right" if left else "left", va="center", fontsize=8,
                 color=CENN_C if is_hl else "black",
                 fontweight="bold" if is_hl else "normal")
     # CD clique bars: only MAXIMAL cliques (consecutive runs within cd). Keeping every start index
@@ -246,13 +246,13 @@ def fig_cd_diagram(mean_ranks, cd, outdir, name="fig_cd_diagram", note=None):
     yb = y0 - 0.16                                   # clean band just below the rank axis
     for k, (a, b) in enumerate(cliques):
         ax.plot([a - 0.05, b + 0.05], [yb - k * 0.13, yb - k * 0.13], "-",
-                color="#333333", lw=3.0, solid_capstyle="round")
-    ax.annotate(f"CD = {cd:.2f}", (lo, y0 + 0.45), fontsize=7.5, color="0.3")
+                color="#555555", lw=2.2, solid_capstyle="round")
+    ax.annotate(f"CD = {cd:.2f}", (lo, y0 + 0.45), fontsize=8, color="0.3")
     ax.plot([lo, lo + cd], [y0 + 0.38, y0 + 0.38], "k-", lw=1.5)
-    title = "Critical-difference diagram (avg ranks, dataset$\\times$horizon)"
+    title = "Critical-difference diagram"
     if note:
         title += f"\n{note}"
-    ax.set_title(title, fontsize=9, pad=3)
+    ax.set_title(title, fontsize=8.5, pad=3)
     fig.subplots_adjust(top=0.99, bottom=0.01, left=0.01, right=0.99)
     return savefig(fig, outdir, name)
 
@@ -410,54 +410,41 @@ def fig_scale_disagreement(spread, outdir, name="fig_scale_disagreement", scales
 
 
 # ---------------------------------------------------------------------------
-# 10. Training-stability curves (appendix)
+# 10. Training-stability curves (appendix; training-stability controls)
 # ---------------------------------------------------------------------------
-def fig_contraction(curves, outdir, name="fig_contraction", xlabel="Training step", rho=None,
-                    ylabel=r"Feedback operator norm $\|A_{\mathrm{eff}}\|$"):
-    """Direct, honest demonstration of the stability mechanism: the feedback operator norm
-    ||A_eff|| stays below the contraction bound (1) WITH the spectral cap, but grows past it
-    without. (The spectral cap is empirically slack; this shows what the cap actually guarantees.)
-
-    The post-hoc variant feeds per-channel learned-vs-capped norms from a trained checkpoint
-    (xlabel='Feedback operator (channels, sorted by learned norm)'); the x-axis is then a channel
-    rank, not a training step — caller sets xlabel accordingly."""
+def fig_contraction(curves, outdir, name="fig_contraction", xlabel="Branch-channel pair (sorted by learned norm)",
+                    rho=None, ylabel=None):
+    """Stability audit read from a trained checkpoint: (top) learned feedback-template norm per
+    branch-channel pair against the bound rho, (bottom) the per-step contraction factor
+    alpha_max + (1 - alpha_max) * norm, which is the quantity Proposition 1 bounds below one.
+    Factor curves are routed to the bottom panel by their label."""
     apply_style()
-    # Two quantities live on very different scales -> two panels (the old single-axis squashed the
-    # per-step factor flat against the top). LEFT = operator norm ||A_eff|| (0..~0.5, well under the
-    # bound = the cap is slack); RIGHT = per-step contraction factor (~0.99, the REAL margin, which is
-    # alpha-dominated). Factor curves are routed right by their label.
     fac = {k: v for k, v in curves.items() if "factor" in k.lower()}
     nrm = {k: v for k, v in curves.items() if "factor" not in k.lower()}
-    fig, (axn, axf) = plt.subplots(1, 2, figsize=(FULL_W * 0.86, 2.5))
+    fig, (axn, axf) = plt.subplots(2, 1, figsize=(COL_W, 4.0), sharex=True)
     ymax = 0.0
     for lab, (steps, norm, c, ls) in nrm.items():
         axn.plot(steps, norm, color=c, ls=ls, lw=1.5, label=lab); ymax = max(ymax, float(np.max(norm)))
-    axn.axhline(1.0, color="#C44E52", ls=":", lw=1.1, label="contraction bound (=1)")
     if rho is not None:
-        axn.axhline(rho, color="0.45", ls="--", lw=0.9, label=rf"spectral cap $\rho$={rho:g}")
-    axn.set_ylim(0, max(1.12, ymax * 1.08))
-    axn.set_xlabel(xlabel); axn.set_ylabel(r"Operator norm $\|A_{\mathrm{eff}}\|$")
-    _lab = [k for k in curves if "Learned" in k]
-    if _lab:   # cap binds on at least one channel: learned and effective curves differ
-        _raw, _cap = curves[_lab[0]][1], [v for k, v in curves.items() if "Effective" in k][0][1]
-        _nb = int((_raw > _cap + 1e-6).sum())
-        axn.set_title(f"Effective operator norm (cap binds on {_nb} of {len(_raw)} channels)", fontsize=8.3)
-    else:
-        axn.set_title("Effective operator norm (cap is slack)", fontsize=8.3)
-    axn.legend(fontsize=6.4, loc="center right", labelspacing=0.3, handletextpad=0.4, framealpha=0.9)
+        axn.axhline(rho, color="0.35", ls="--", lw=1.0, label=rf"bound $\rho = {rho:g}$")
+    axn.set_ylim(0, max(1.0, ymax * 1.15))
+    axn.set_ylabel(r"Template norm $\|A_{\mathrm{eff}}\|_\infty$", fontsize=8.5)
+    axn.legend(fontsize=7.4, loc="upper right", labelspacing=0.3, handletextpad=0.5, framealpha=0.92)
+    axn.tick_params(labelsize=8)
     if fac:
         allf = np.concatenate([np.asarray(v[1], float) for v in fac.values()])
         for lab, (steps, f, c, ls) in fac.items():
-            axf.plot(steps, f, color="#117733", ls=ls, lw=1.7, label=lab)
-        axf.axhline(1.0, color="#C44E52", ls=":", lw=1.1, label="bound (=1)")
+            axf.plot(steps, f, color="#117733", ls=ls, lw=1.6, label=lab)
+        axf.axhline(1.0, color="#C44E52", ls=":", lw=1.1, label="contraction bound (1)")
         pad = max(1e-3, (1.0 - float(allf.min())) * 0.25)
         axf.set_ylim(float(allf.min()) - pad, 1.0 + pad)
-        axf.set_xlabel(xlabel); axf.set_ylabel("Per-step contraction factor")
-        axf.set_title(r"Per-step factor $<1$ ($\alpha$-dominated)", fontsize=8.3)
-        axf.legend(fontsize=6.4, loc="lower right", labelspacing=0.3, handletextpad=0.4, framealpha=0.9)
+        axf.set_ylabel("Per-step contraction factor", fontsize=8.5)
+        axf.legend(fontsize=7.4, loc="lower left", labelspacing=0.3, handletextpad=0.5, framealpha=0.92)
+        axf.tick_params(labelsize=8)
     else:
         axf.axis("off")
-    fig.tight_layout(w_pad=1.2)
+    axf.set_xlabel(xlabel, fontsize=8.5)
+    fig.tight_layout(h_pad=0.8)
     return savefig(fig, outdir, name)
 
 
@@ -672,12 +659,12 @@ def fig_rank_heatmap(models, datasets, rankmat, outdir, name="fig_rank_heatmap",
         ax.add_patch(plt.Rectangle((-0.5, hi - 0.5), len(datasets), 1, fill=False,
                                    edgecolor=CENN_C, lw=2.2, zorder=5))
         ax.get_yticklabels()[hi].set_color(CENN_C); ax.get_yticklabels()[hi].set_fontweight("bold")
-    ax.set_xticks(np.arange(-0.5, len(datasets), 1), minor=True)
-    ax.set_yticks(np.arange(-0.5, len(models), 1), minor=True)
-    ax.grid(which="minor", color="white", lw=1.0); ax.tick_params(which="minor", length=0)
+    ax.tick_params(which="minor", length=0)
+    ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.045, pad=0.02)
     cb.set_label(f"Rank within dataset (1 = best of {k})", fontsize=7.4); cb.ax.tick_params(labelsize=6.5)
-    ax.set_title(title or "Per-dataset rank — no single model wins everywhere", fontsize=9)
+    if title:
+        ax.set_title(title, fontsize=9)
     return savefig(fig, outdir, name)
 
 

@@ -1,0 +1,40 @@
+{
+ "model": "CeNN_AMS-Anc-GateUnbounded",
+ "dataset": "ETTm1",
+ "horizon": 336,
+ "seed": 1,
+ "input_size": 512,
+ "mse": 0.3125689636259769,
+ "mae": 0.3598606296423675,
+ "train_time_s": 64.3,
+ "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+ "params": 352437,
+ "best_valid_loss": 0.495984822511673,
+ "final_valid_loss": 0.49774011969566345,
+ "source": "experiment",
+ "provenance": {
+  "python": "3.12.13",
+  "torch": "2.11.0+cu128",
+  "cuda": "12.8",
+  "hostname": "workstation-rtx4090",
+  "git_commit": "e7c3cf7",
+  "datasetsforecast": "1.0.1"
+ },
+ "timestamp": "2026-09-12T19:38:14.470656+00:00",
+ "config": {
+  "max_steps": 1000,
+  "precision": "bf16-mixed",
+  "scaler_type": "identity",
+  "weight_decay": 0.01,
+  "val_size": 11520,
+  "test_size": 11520,
+  "eval": "standard_fixed_split_stride1",
+  "cv_chunks": null,
+  "batch_size": 32,
+  "trunk_type": "cenn",
+  "cenn_K": 2,
+  "integrator": "euler",
+  "multiscale_mode": "parallel_ensemble",
+  "cross_var": "none"
+ }
+}

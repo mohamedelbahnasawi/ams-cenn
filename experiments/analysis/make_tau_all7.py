@@ -3,7 +3,7 @@
 Bug being fixed: the artifact stores tau = 1 - alpha (drive weight, model.py L247); the old
 figure plotted that ~0.10 value but labelled it "Retention alpha". RETENTION is alpha = 1 - tau ~= 0.90.
 
-Data (2026-09-05): the anchored headline CeNN_AMS-Anc on all seven datasets (canonical artifacts/tau,
+Data: the anchored headline CeNN_AMS-Anc on all seven datasets (canonical artifacts/tau,
 regenerated from the checkpoints by analysis/regen_artifacts.py).
 """
 import sys, os, glob, re
@@ -53,9 +53,8 @@ for i, ds in enumerate(SEVEN):
         continue
     p = profiles[ds]
     ax.plot(np.arange(len(p)), p, lw=1.1, color=COLORS[i], label=f"{ds} ({p.mean():.2f})")
-ax.set_xlabel("Latent channel (sorted by retention)")
-ax.set_ylabel(r"Retention $\alpha = 1-\tau$")
-ax.set_title("Learned per-channel retention (AMS-CeNN)", fontsize=8.6)
+ax.set_xlabel("Hidden channel (sorted by retention)", fontsize=8.5)
+ax.set_ylabel(r"Learned retention $\alpha$", fontsize=8.5)
 ax.legend(loc="lower right", fontsize=5.8, ncol=2, handletextpad=0.4, columnspacing=0.8, framealpha=0.92)
 ax.margins(x=0.02)
 allmean = float(np.mean([profiles[d].mean() for d in profiles]))

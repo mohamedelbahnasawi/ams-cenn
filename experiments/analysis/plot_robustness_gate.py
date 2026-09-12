@@ -1,5 +1,5 @@
-"""Generate the two chunk-2 figures for Paper A:
-  fig08_robustness.pdf  — degradation curves (contamination robustness)
+"""Generate the two robustness and gate figures for the paper:
+  fig08_robustness.pdf  — robustness degradation curves (contamination robustness)
   fig09_gate_adaptation.pdf — gate-variation: pointwise vs context gate (the "Adaptive" answer)
 Outputs go to experiments/aggregated/figures/.
 """
@@ -11,20 +11,21 @@ import matplotlib.pyplot as plt
 import sys
 from pathlib import Path as _P
 sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
-from experiments.config import FIGURES_DIR  # noqa: E402
-OUT = str(FIGURES_DIR); os.makedirs(OUT, exist_ok=True)
 import numpy as np
 
-ROBUST_CSV = "experiments/_robustness/robustness_degradation.csv"
-
-from experiments.config import CENN_MAIN_VARIANT  # noqa: E402
+ROBUSTNESS_CSV = "experiments/_robustness/robustness_degradation.csv"
+from experiments.config import CENN_MAIN_VARIANT, FIGURES_DIR  # noqa: E402
+OUT = str(FIGURES_DIR); os.makedirs(OUT, exist_ok=True)
 AMS = f"CeNN_{CENN_MAIN_VARIANT}"
 MODELS = [AMS, "DLinear", "TSMixer", "PatchTST", "TCN"]
 LABEL = {AMS: "AMS-CeNN", "DLinear": "DLinear", "TSMixer": "TSMixer",
          "PatchTST": "PatchTST", "TCN": "TCN"}
-KINDS = [("gauss", "Gaussian noise ($\\sigma$)"), ("spike", "Outliers (fraction)"),
-         ("mask", "Missing block (len)"), ("scale", "Gain error ($\\gamma$)"),
-         ("shift", "Level shift (z-units)")]
+# (csv key, panel title, x-axis label)
+KINDS = [("gauss", "Gaussian noise", "noise standard deviation (z-units)"),
+         ("spike", "Outlier spikes", "fraction of spiked steps"),
+         ("mask", "Missing blocks", "block length (steps)"),
+         ("scale", "Gain error", "multiplicative gain error"),
+         ("shift", "Level shift", "shift (z-units)")]
 COL = {AMS: "#E8772E", "DLinear": "#4C72B0", "TSMixer": "#55A868",
        "PatchTST": "#8172B3", "TCN": "#937860"}
 
@@ -32,7 +33,7 @@ COL = {AMS: "#E8772E", "DLinear": "#4C72B0", "TSMixer": "#55A868",
 def load():
     # ratios[(model,kind)][level] = mean over datasets of mean_ratio
     acc = defaultdict(lambda: defaultdict(list))
-    with open(ROBUST_CSV) as f:
+    with open(ROBUSTNESS_CSV) as f:
         for r in csv.DictReader(f):
             acc[(r["model"], r["kind"])][float(r["level"])].append(float(r["mean_ratio"]))
     out = {}
@@ -42,8 +43,11 @@ def load():
 
 
 def fig_robustness(data):
-    fig, axes = plt.subplots(1, 5, figsize=(13.5, 2.7))
-    for ax, (kind, xlabel) in zip(axes, KINDS):
+    """2 x 3 grid: the three contamination families on the top row, the two distribution-shift
+    families on the bottom row, legend in the last slot. Large type for print."""
+    fig, axes = plt.subplots(2, 3, figsize=(7.16, 4.6))
+    axes = axes.ravel()
+    for ax, (kind, title, xlabel) in zip(axes, KINDS):
         for m in MODELS:
             d = data.get((m, kind), {})
             if not d:
@@ -51,24 +55,28 @@ def fig_robustness(data):
             levels = sorted(d)
             xs = [0.0] + levels
             ys = [1.0] + [d[l] for l in levels]   # anchor clean = ratio 1
-            ax.plot(xs, ys, marker="o", ms=3.5, lw=2.2 if m == AMS else 1.3,
+            ax.plot(xs, ys, marker="o", ms=3.2, lw=2.0 if m == AMS else 1.2,
                     color=COL[m], label=LABEL[m], zorder=3 if m == AMS else 2,
-                    alpha=1.0 if m == AMS else 0.8)
+                    alpha=1.0 if m == AMS else 0.85)
         ax.axhline(1.0, color="0.6", lw=0.7, ls=":")
-        ax.set_title(kind, fontsize=10, fontweight="bold")
+        ax.set_title(title, fontsize=9.5)
         ax.set_xlabel(xlabel, fontsize=8)
-        ax.tick_params(labelsize=7)
+        ax.tick_params(labelsize=7.5)
         ax.grid(alpha=0.25)
-    axes[0].set_ylabel("degradation ratio\n(MSE$_{\\rm pert}$/MSE$_{\\rm clean}$)", fontsize=8)
-    axes[0].legend(fontsize=7, loc="upper left", framealpha=0.9)
-    fig.tight_layout()
+    for ax in (axes[0], axes[3]):
+        ax.set_ylabel("MSE$_{\\rm perturbed}$ / MSE$_{\\rm clean}$", fontsize=8.5)
+    handles, labels = axes[0].get_legend_handles_labels()
+    axes[5].axis("off")
+    axes[5].legend(handles, labels, loc="center", fontsize=9, frameon=False, title="Model", title_fontsize=9)
+    fig.tight_layout(h_pad=1.2, w_pad=1.0)
     p = os.path.join(OUT, "fig08_robustness.pdf")
-    fig.savefig(p, bbox_inches="tight"); plt.close(fig)
+    fig.savefig(p, bbox_inches="tight"); fig.savefig(p.replace(".pdf", ".png"), dpi=200, bbox_inches="tight")
+    plt.close(fig)
     print("wrote", p)
 
 
 def fig_gate():
-    # alpha temporal-std (gate variation) measured across regimes + the context-gate push.
+    # alpha temporal-std (gate variation) measured across regimes + the context-gate variant.
     # pointwise gate: ~1e-4 floor everywhere; context gate: 0.0137 on SynthHetero (still << 0.05).
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.2, 2.8))
     # left: alpha temporal-std, pointwise vs context, log scale, with 0.05 keep threshold

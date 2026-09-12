@@ -39,6 +39,36 @@ checkpoints (`experiments/checkpoints/`) are not tracked because of their size. 
 artifacts without retraining; the robustness driver, `pathway_energy.py` and `regen_artifacts.py`
 all need checkpoints.
 
+## 3b. Control and appendix result data (added in v1.2.0)
+- `experiments/results/` also holds the stability ablations on the headline (`CeNN_AMS-Anc-GateUnbounded`,
+  `CeNN_AMS-Anc-CapOff`) and the integrator check at K=2 (`CeNN_AMS-Anc-Heun`, `-ExpEuler`, `-RK4`), ETT, four
+  horizons, seeds {1,42,123};
+- `experiments/L{96,192,336}/results/` — the lookback sweep of the headline (`CeNN_AMS-Anc`) and its
+  no-residual arm (`CeNN_C1C2-Anc`) on ETTh1/ETTh2/Weather at H=96 (the L=512 cells are in `experiments/results/`);
+- `experiments/V{8,...,256}/results/`, `experiments/_undertrain3k/results/`, `experiments/_e1_3000/results/` —
+  the variable-count sweep on Electricity (`CENN_VAR_SUBSET=V`, `CeNN_C1C2-Ensemble` vs `DLinear`), the 3000-step
+  training-budget control on Traffic (`CENN_MAX_STEPS=3000`) and the 3000-step frozen-residual control on ETTh2 H720
+  (`CeNN_FrozenSkip-TrainTrunk`); these three use the earlier min-max configuration;
+- `experiments/analysis/chaos_probe_results.json`, `residual_nonlinearity_results.json` — the synthetic nonlinear
+  test and the residual-predictability test (`chaos_probe.py`, `residual_nonlinearity.py`);
+- `experiments/_scaler_ab_verify/results/`, `experiments/_scaler_ab_h200/` — the baselines re-run under the
+  pipeline min-max scaler for the normalization-fairness table (`make_preproc_table.py`);
+- `experiments/aggregated/cell_contribution/` — the per-window cellular-contribution cache behind the
+  contribution figure (`plot_cell_contribution.py`; recomputing it needs checkpoints).
+
+`residual_nonlinearity.py` additionally needs `pip install statsmodels scikit-learn`.
+
+`python experiments/analysis/lvn_ablation_summary.py` prints the lookback, stability and integrator summaries
+from these files; `make_appendix_figs.py` draws the lookback-sweep and gate-adaptivity figures.
+To regenerate the data:
+```bash
+python experiments/runner.py --models CeNN_AMS-Anc-GateUnbounded CeNN_AMS-Anc-CapOff --datasets ETTh1 ETTh2 ETTm1 ETTm2 --seeds 1 42 123
+python experiments/runner.py --models CeNN_AMS-Anc-Heun CeNN_AMS-Anc-ExpEuler CeNN_AMS-Anc-RK4 --datasets ETTh1 ETTh2 ETTm1 ETTm2 --seeds 1 42 123
+for L in 96 192 336; do CENN_INPUT_SIZE=$L python experiments/runner.py --models CeNN_AMS-Anc CeNN_C1C2-Anc --datasets ETTh1 ETTh2 Weather --horizons 96 --seeds 1 42 123; done
+for V in 8 16 32 64 128 256; do CENN_VAR_SUBSET=$V python experiments/runner.py --models CeNN_C1C2-Ensemble DLinear --datasets Electricity --seeds 1 42 123; done
+CENN_MAX_STEPS=3000 CENN_EXP_DIR=experiments/_undertrain3k python experiments/runner.py --models CeNN_C1C2-Skip-K2 DLinear NHITS TSMixer --datasets Traffic --horizons 96 720 --seeds 1
+```
+
 ## 4. From-scratch run (GPU) — atomic, skip-if-exists, resumable
 ```bash
 # main table: AMS-CeNN (5 seeds) + the baseline suite (3 seeds), all 7 datasets x 4 horizons
@@ -81,6 +111,14 @@ bash experiments/regenerate_all.sh
 | Robustness degradation curves (incl. dead-sensor family) + gate-variation figure | `analysis/aggregate_robustness.py` → `analysis/plot_robustness_gate.py` |
 | Pathway energy decomposition (residual / cell / cross term) | `analysis/pathway_energy.py` |
 | Receptive-field figure | `analysis/plot_receptive_field.py` |
+| Per-cell regret distribution figure | `analysis/plot_regret_distribution.py` |
+| Lookback-sweep and gate-adaptivity figures | `analysis/make_appendix_figs.py` |
+| Cellular-contribution figure | `analysis/plot_cell_contribution.py` (uses `aggregated/cell_contribution/`; recomputing the cache needs checkpoints) |
+| Forecast decomposition (linear path vs cellular correction) | `analysis/plot_forecast_decomposition.py` (needs checkpoints) |
+| Normalization-fairness table | `analysis/make_preproc_table.py` → `aggregated/tables/preproc_fairness.tex` |
+| Lookback, stability and integrator summaries | `analysis/lvn_ablation_summary.py` |
+| Per-cell worst-case regret statistic | `analysis/worst_case_regret_28cell.py --tex <manuscript.tex>` |
+| Residual-predictability test, synthetic nonlinear test | `analysis/residual_nonlinearity.py`, `analysis/chaos_probe.py` (results JSONs included) |
 
 ## 8. Citation
 Every tagged release is archived on Zenodo (concept DOI 10.5281/zenodo.21041026, all versions).

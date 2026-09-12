@@ -495,7 +495,7 @@ def forecast_panels(specs, model=None):
         # Representative window = median-error window among the NON-DEGENERATE windows (truth
         # std at or above the dataset median): ETTm2 has quantised, near-constant series whose
         # median-error window is a flat line with a few jumps, which shows nothing about the
-        # forecast. Selection rule is stated in the figure caption. (2026-09-05)
+        # forecast. Selection rule is stated in the figure caption.
         werr = werr[(ystd >= ystd.median()) & (ynun >= 0.5 * H)]   # varying AND not quantised
         uid, cutoff = (werr - werr.median()).abs().idxmin()      # representative window
         sel = b[(b.uid == uid) & (b.cutoff == cutoff)].sort_values("ds")
@@ -528,7 +528,7 @@ def contraction_figure(dataset, horizon):
         if not hits:
             continue
         # Worst-case seed of the block (largest learned norm): the audit must show the cell where
-        # the cap is closest to (or actually) binding, not a seed-1 default. (2026-09-05)
+        # the cap is closest to (or actually) binding, not a seed-1 default.
         hits = sorted(hits, key=lambda f: float(np.load(f)["raw"].max()), reverse=True)
         print(f"[contraction: using {hits[0].split(chr(92))[-1].split(chr(47))[-1]} (largest learned norm of {len(hits)} seeds)]")
         d = np.load(hits[0])
@@ -549,20 +549,19 @@ def contraction_figure(dataset, horizon):
         if n_binding == 0:
             # Cap never binds: learned and effective norms coincide. The honest story is the factor:
             # ||A_eff|| sits low, but the contraction factor sits near alpha_max (slow contraction).
-            curves = {r"$\|A_{\mathrm{eff}}\|$ (cap inactive)": (x, raw[order], plotting.ACC, "-")}
+            curves = {r"learned norm (bound inactive)": (x, raw[order], plotting.ACC, "-")}
         else:
             # crimson = learned/uncapped (over the bound for some channels), blue = effective/capped.
             curves = {
-                r"Learned $\|A\|$ (uncapped)": (x, raw[order], "#C44E52", "-"),
-                r"Effective $\|A_{\mathrm{eff}}\|$ (capped)": (x, capped[order], plotting.ACC, "-"),
+                r"learned norm": (x, raw[order], "#C44E52", "-"),
+                r"after the bound": (x, capped[order], plotting.ACC, "-"),
             }
         if factor_cap is not None:
-            curves[r"Per-step factor $\leq 1$ (slow contraction)"] = \
+            curves[r"per-step factor"] = \
                 (x, factor_cap[order], "#117733", "-")
         return plotting.fig_contraction(
             curves, FIG_DIR, rho=rho,
-            xlabel="Latent channel (sorted by learned $\\|A\\|$)",
-            ylabel=r"Spectral norm $\|A_{\mathrm{eff}}\|$ / per-step factor")
+            xlabel="Branch-channel pair (sorted by learned norm)")
     print(f"[contraction skipped: no aeff artifact for a capped CeNN variant @ {dataset} H{horizon} "
           f"(run CeNN-Full with --save-artifacts)]")
     return None
@@ -699,8 +698,7 @@ def main():
     ct = contraction_figure(args.dataset, args.horizon)
     if ct:
         made.append(ct)
-    # C2 UQ figures (scale-disagreement, spread-vs-error) CUT from this work: UQ/conformal
-    # calibration is a future-work deliverable; rho=0.19 is weak.
+    # C2 UQ figures (scale-disagreement, spread-vs-error) are not part of the paper (rho=0.19 is weak).
 
     for p in made:
         print(f"  wrote {p}")

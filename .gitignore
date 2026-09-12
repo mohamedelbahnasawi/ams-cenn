@@ -54,7 +54,8 @@ data/
 !experiments/_robustness/robustness_degradation.csv
 experiments/checkpoints/
 experiments/published/
-experiments/aggregated/
+experiments/aggregated/*
+!experiments/aggregated/cell_contribution/
 experiments/artifacts/
 
 # debug scratch
@@ -76,8 +77,10 @@ _e2e_scratch/
 _probe_scratch/
 
 # L-sensitivity ablation outputs (CENN_INPUT_SIZE != 512 -> nested L{N}/ isolation)
-experiments/L[0-9]*/
-experiments/V[0-9]*/
+experiments/L[0-9]*/*
+!experiments/L[0-9]*/results/
+experiments/V[0-9]*/*
+!experiments/V[0-9]*/results/
 
 # pre-protocol results quarantined (val_check_steps=50 era; re-run at locked protocol)
 experiments/results_stale_preprotocol/
@@ -85,7 +88,14 @@ _wdiag/
 
 # session scratch: experiment scratch dirs + launch logs — local only
 _scaler_ab/
-experiments/_scaler_ab_h200/
-experiments/_undertrain3k/
+experiments/_scaler_ab_h200/*
+!experiments/_scaler_ab_h200/*.json
+experiments/_scaler_ab_verify/*
+!experiments/_scaler_ab_verify/results/
+experiments/_undertrain3k/*
+!experiments/_undertrain3k/results/
+experiments/_e1_3000/*
+!experiments/_e1_3000/results/
 experiments/_weather_minmax_backup/
 *.log
+experiments/_overlay_preds/

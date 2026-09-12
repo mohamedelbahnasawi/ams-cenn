@@ -1,16 +1,17 @@
 #!/usr/bin/env python
-"""Ablation BUILD-UP bar chart (S0 -> +C1 -> +C2 -> +ensemble -> +linear skip = AMS-CeNN).
+"""ablation BUILD-UP bar chart (S0 -> +C1 -> +C2 -> +ensemble -> +linear skip = AMS-CeNN).
 
 This is the HONEST build-up figure that visualizes tab:ablation (ablation_buildup.tex): every step
 is a proper NESTED model (not a skip-less leave-one-out ABL-* variant), so it does NOT suffer the
-confounding of the old leave-one-out `fig_ablation_bars` (every ABL-* variant also lacks the skip,
-so its Delta vs the skip-headline is dominated by the absent skip).
+confounding that retired the old leave-one-out `fig_ablation_bars` (every ABL-* variant
+also lacks the skip, so its Delta vs the skip-headline is dominated by the absent skip).
 
-Grouped by horizon so the figure shows what the table tells: which step of the chain carries the
-accuracy at each horizon (under the anchored protocol the linear residual does; the cellular
-pathway is accuracy-neutral).
+Grouped by horizon so the figure shows BOTH stories the table tells:
+  (1) the zero-init linear skip lowers MSE at every horizon, and the gap WIDENS with the horizon;
+  (2) multi-scale (C2) only pulls ahead of the S0/C1 substrate at the long horizons (H336/H720).
 
-Reads from the SAME results source as make_tables.ablation_buildup_table (load_all_results + _seedagg).
+Reads from the SAME results source as make_tables.ablation_buildup_table (load_all_results + _seedagg)
+and ASSERTS the per-cell values match the locked table, so figure and table can never silently drift.
 
 Run:  .venv/Scripts/python.exe experiments/analysis/make_ablation_buildup_fig.py
 """
@@ -28,11 +29,11 @@ from experiments.analysis import plotting                                      #
 
 # The build-up chain (same order/variants as make_tables.ablation_buildup_table).
 CHAIN = [
-    (ROLES["s0"],        r"S$_0$: stable substrate"),
-    (ROLES["c1"],        r"$+$ bounded-$\tau$ gate (C1)"),
-    (ROLES["c2"],        r"$+$ multi-scale (C2)"),
-    (ROLES["no_skip"],   r"$+$ C1$+$C2 ensemble (no skip)"),
-    (ROLES["skip_only"], r"linear residual only"),
+    (ROLES["s0"],        r"S$_0$: substrate"),
+    (ROLES["c1"],        r"$+$ retention gate (C1)"),
+    (ROLES["c2"],        r"$+$ dilated branches (C2)"),
+    (ROLES["no_skip"],   r"C1 $+$ C2, no residual"),
+    (ROLES["skip_only"], r"linear residual alone"),
     (ROLES["main"],      CENN_DISPLAY_NAME + r" ($+$ residual)"),
 ]
 # Locked values from tab:ablation (ablation_buildup.tex) — the figure self-check guards against drift.
@@ -58,7 +59,7 @@ def compute():
 
 
 def selfcheck(vals, horizons):
-    if LOCKED is None:
+    if LOCKED is None:   # anchored chain: the table is regenerated from the same CSV, nothing to lock against
         print('[selfcheck skipped] LOCKED is None; values come straight from aggregated/ablation_results.csv')
         return
     bad = []
@@ -96,7 +97,7 @@ def make_figure(vals, horizons):
     ax.set_xticks(x)
     ax.set_xticklabels([f"H{h}" for h in horizons])
     ax.set_xlabel("Forecast horizon")
-    ax.set_ylabel(r"MSE ($\downarrow$), seed-mean over ETT")
+    ax.set_ylabel("MSE, seed mean over the four ETT datasets")
     ax.set_ylim(0, max(max(vals[v][h] for v, _ in CHAIN) for h in horizons) * 1.16)
     ax.legend(ncol=3, loc="upper left", fontsize=6.8, columnspacing=1.0,
               handlelength=1.3, borderaxespad=0.3)
