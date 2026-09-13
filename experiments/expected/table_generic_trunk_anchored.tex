@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\centering
+\caption{Generic-trunk control. AMS-CeNN versus a strictly heavier generic MLP-mixer trunk (time- and hidden-channel mixing) that replaces the cellular stack, with the last-value anchor, input projection, prediction head, and zero-init linear residual held fixed. Values are mean MSE\,/\,MAE over three seeds and four horizons ($H \in \{96,192,336,720\}$); \textbf{bold} marks the better of the two. AMS-CeNN wins 22 of $28$ dataset--horizon cells on MSE.}
+\label{tab:generic_trunk}
+\begin{tabular}{l cc cc}
+\toprule
+& \multicolumn{2}{c}{MSE} & \multicolumn{2}{c}{MAE} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Dataset & AMS-CeNN & Generic & AMS-CeNN & Generic \\
+\midrule
+ETTh1 & \textbf{0.350} & 0.353 & \textbf{0.398} & 0.401 \\
+ETTh2 & \textbf{0.300} & 0.340 & \textbf{0.372} & 0.402 \\
+ETTm1 & \textbf{0.304} & 0.310 & \textbf{0.354} & 0.362 \\
+ETTm2 & \textbf{0.224} & 0.227 & \textbf{0.299} & 0.305 \\
+Weather & \textbf{0.237} & 0.241 & \textbf{0.288} & 0.295 \\
+Electricity & 0.169 & 0.169 & 0.263 & 0.263 \\
+Traffic & \textbf{0.346} & 0.347 & 0.281 & \textbf{0.279} \\
+\midrule
+Average & \textbf{0.276} & 0.284 & \textbf{0.322} & 0.330 \\
+\bottomrule
+\end{tabular}
+\end{table*}

@@ -1,0 +1,27 @@
+{
+ "model": "TCN",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 1,
+ "kind": "dead",
+ "level": 2,
+ "mse": 0.31527489124775226,
+ "mae": 0.3530316436456389,
+ "mse_clean": 0.3151926661439018,
+ "mae_clean": 0.352384009877184,
+ "ratio_mse": 1.0002608725160278,
+ "n_rows": 148478400,
+ "alias": "TCN",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "TCN__Weather__H720__seed1"
+ },
+ "dead_ids": [
+  "OT",
+  "wv (m/s)"
+ ],
+ "mse_healthy": 0.34809086813267853,
+ "mse_clean_healthy": 0.34809086813267853,
+ "ratio_mse_healthy": 1.0
+}

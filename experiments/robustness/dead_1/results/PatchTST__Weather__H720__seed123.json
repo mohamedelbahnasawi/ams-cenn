@@ -1,0 +1,26 @@
+{
+ "model": "PatchTST",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 123,
+ "kind": "dead",
+ "level": 1,
+ "mse": 0.36395143843733313,
+ "mae": 0.3684816262682472,
+ "mse_clean": 0.3237273649430016,
+ "mae_clean": 0.34513181195407955,
+ "ratio_mse": 1.1242529296261803,
+ "n_rows": 148478400,
+ "alias": "PatchTST",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "PatchTST__Weather__H720__seed123"
+ },
+ "dead_ids": [
+  "rh (%)"
+ ],
+ "mse_healthy": 0.32240800627039906,
+ "mse_clean_healthy": 0.32240800627039906,
+ "ratio_mse_healthy": 1.0
+}

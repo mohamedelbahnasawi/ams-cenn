@@ -1,0 +1,27 @@
+{
+ "model": "PatchTST",
+ "dataset": "Weather",
+ "horizon": 336,
+ "seed": 42,
+ "kind": "dead",
+ "level": 2,
+ "mse": 0.2970259586209002,
+ "mae": 0.33797885033920644,
+ "mse_clean": 0.25716375269105096,
+ "mae_clean": 0.2975868615227799,
+ "ratio_mse": 1.155007093778642,
+ "n_rows": 71999424,
+ "alias": "PatchTST",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "PatchTST__Weather__H336__seed42"
+ },
+ "dead_ids": [
+  "H2OC (mmol/mol)",
+  "VPdef (mbar)"
+ ],
+ "mse_healthy": 0.2694866181294848,
+ "mse_clean_healthy": 0.2694866181294848,
+ "ratio_mse_healthy": 1.0
+}

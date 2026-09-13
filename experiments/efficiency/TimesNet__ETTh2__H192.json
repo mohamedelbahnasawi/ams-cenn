@@ -1,0 +1,20 @@
+{
+  "model": "TimesNet",
+  "dataset": "ETTh2",
+  "horizon": 192,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 1533569,
+  "flops_fwd": 57916436480,
+  "macs_fwd": 28958218240.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 128.898,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 21.3909,
+  "peak_train_mb": 268.2,
+  "peak_infer_mb": 54.1,
+  "precision": "32-true",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

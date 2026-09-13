@@ -1,0 +1,27 @@
+{
+ "model": "CeNN_AMS-Anc",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 123,
+ "kind": "dead",
+ "level": 2,
+ "mse": 0.364378803225655,
+ "mae": 0.3768297474279366,
+ "mse_clean": 0.32512488298616177,
+ "mae_clean": 0.35297236145046534,
+ "ratio_mse": 1.1207349000142939,
+ "n_rows": 148478400,
+ "alias": "CeNN_PROBE-RevIN-LastOnly",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "CeNN_AMS-Anc__Weather__H720__seed123"
+ },
+ "dead_ids": [
+  "rh (%)",
+  "wv (m/s)"
+ ],
+ "mse_healthy": 0.34150147909507383,
+ "mse_clean_healthy": 0.34135495231298435,
+ "ratio_mse_healthy": 1.0004292504945267
+}

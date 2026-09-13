@@ -1,0 +1,40 @@
+{
+  "model": "CeNN_SkipOnly-Anc",
+  "dataset": "Traffic",
+  "horizon": 96,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.3298206836702891,
+  "mae": 0.2681244333226649,
+  "train_time_s": 120.3,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 50972,
+  "best_valid_loss": 0.22892983257770538,
+  "final_valid_loss": 0.22892983257770538,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "12af7f5",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-03T22:41:55.167808+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 3,
+    "batch_size": 4,
+    "trunk_type": "none",
+    "cenn_K": null,
+    "integrator": null,
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

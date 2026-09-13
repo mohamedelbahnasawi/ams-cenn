@@ -1,0 +1,20 @@
+{
+ "model": "DLinear",
+ "dataset": "ETTm1",
+ "horizon": 720,
+ "seed": 42,
+ "kind": "mask",
+ "level": 16,
+ "mse": 0.392761851758594,
+ "mae": 0.42222336299969787,
+ "mse_clean": 0.3582527953869228,
+ "mae_clean": 0.38935496091747074,
+ "ratio_mse": 1.0963259933098373,
+ "n_rows": 54437040,
+ "alias": "DLinear",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "DLinear__ETTm1__H720__seed42"
+ }
+}

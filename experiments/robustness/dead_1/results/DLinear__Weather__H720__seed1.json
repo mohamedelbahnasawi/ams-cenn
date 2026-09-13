@@ -1,0 +1,26 @@
+{
+ "model": "DLinear",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 1,
+ "kind": "dead",
+ "level": 1,
+ "mse": 0.3186228946561279,
+ "mae": 0.3607142773256279,
+ "mse_clean": 0.3184352652542835,
+ "mae_clean": 0.35930469550433647,
+ "ratio_mse": 1.0005892230613798,
+ "n_rows": 148478400,
+ "alias": "DLinear",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "DLinear__Weather__H720__seed1"
+ },
+ "dead_ids": [
+  "OT"
+ ],
+ "mse_healthy": 0.3342637159182548,
+ "mse_clean_healthy": 0.3342637159182548,
+ "ratio_mse_healthy": 1.0
+}

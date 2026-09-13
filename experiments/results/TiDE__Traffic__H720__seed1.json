@@ -1,0 +1,33 @@
+{
+  "model": "TiDE",
+  "dataset": "Traffic",
+  "horizon": 720,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.38179521429172225,
+  "mae": 0.3080907194044848,
+  "train_time_s": 280.7,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 13052916,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "64a9d4c",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-13T08:08:40.343781+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 1756,
+    "test_size": 3508,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 6,
+    "batch_size": 4
+  }
+}

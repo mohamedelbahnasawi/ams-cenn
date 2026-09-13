@@ -1,0 +1,40 @@
+{
+  "model": "CeNN_S0-Anc",
+  "dataset": "ETTm1",
+  "horizon": 720,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.37143003819141435,
+  "mae": 0.3983948823728578,
+  "train_time_s": 75.2,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 376937,
+  "best_valid_loss": 0.6057546138763428,
+  "final_valid_loss": 0.6058883666992188,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "12af7f5",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-02T19:50:17.256149+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 11520,
+    "test_size": 11520,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "none",
+    "cross_var": "none"
+  }
+}

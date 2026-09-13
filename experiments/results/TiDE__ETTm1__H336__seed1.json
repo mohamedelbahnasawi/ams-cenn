@@ -1,0 +1,33 @@
+{
+  "model": "TiDE",
+  "dataset": "ETTm1",
+  "horizon": 336,
+  "seed": 1,
+  "input_size": 512,
+  "mse": 0.3176046468253804,
+  "mae": 0.36586763142081696,
+  "train_time_s": 25.9,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 6515316,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "19c1914",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-12T01:52:49.218232+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 11520,
+    "test_size": 11520,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32
+  }
+}

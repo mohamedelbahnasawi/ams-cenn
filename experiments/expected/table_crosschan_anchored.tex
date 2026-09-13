@@ -1,0 +1,20 @@
+\begin{table}[!htbp]
+\centering
+\caption{Cross-channel and unroll-depth controls on the high-cardinality datasets. Four cross-series interaction mechanisms, and deeper unrolls $K \in \{4, 8\}$, added to the headline AMS-CeNN; mean MSE over three seeds and four horizons ($H \in \{96,192,336,720\}$). Every mechanism, including the dense $O(V^2)$ mixer and the $O(V)$ STAR core, matches the channel-independent headline to within $0.15\%$, so explicit cross-series coupling does not close the high-cardinality gap, and $K$ is immaterial.}
+\label{tab:crosschan}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcc}
+\toprule
+Variant & Electricity & Traffic \\
+\midrule
+AMS-CeNN ($K{=}2$) & 0.1688 & 0.3459 \\
+\quad $+$ STAR \,($O(V)$) & 0.1690 & 0.3459 \\
+\quad $+$ pointwise ($1{\times}1$) & 0.1690 & 0.3461 \\
+\quad $+$ VarMix ($O(V^2)$) & 0.1690 & 0.3461 \\
+\quad $+$ grouped conv (G4) & 0.1686 & 0.3461 \\
+\quad $K{=}4$ & 0.1689 & 0.3458 \\
+\quad $K{=}8$ & 0.1689 & 0.3459 \\
+\bottomrule
+\end{tabular}
+\end{table}

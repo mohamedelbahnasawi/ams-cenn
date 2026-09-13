@@ -1,0 +1,26 @@
+{
+ "model": "CeNN_SkipOnly-Anc",
+ "dataset": "ETTm1",
+ "horizon": 96,
+ "seed": 42,
+ "kind": "dead",
+ "level": 1,
+ "mse": 0.30514039003989163,
+ "mae": 0.3550074280252547,
+ "mse_clean": 0.2568612690046367,
+ "mae_clean": 0.3230497134157659,
+ "ratio_mse": 1.187957963543283,
+ "n_rows": 7677600,
+ "alias": "CeNN_SkipOnly-Anc",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "CeNN_SkipOnly-Anc__ETTm1__H96__seed42"
+ },
+ "dead_ids": [
+  "LUFL"
+ ],
+ "mse_healthy": 0.24743083836590382,
+ "mse_clean_healthy": 0.24743083836590382,
+ "ratio_mse_healthy": 1.0
+}

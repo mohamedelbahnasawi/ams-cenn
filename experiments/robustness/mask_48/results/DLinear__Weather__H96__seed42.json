@@ -1,0 +1,20 @@
+{
+ "model": "DLinear",
+ "dataset": "Weather",
+ "horizon": 96,
+ "seed": 42,
+ "kind": "mask",
+ "level": 48,
+ "mse": 0.2107879650491559,
+ "mae": 0.28186021409145134,
+ "mse_clean": 0.1666252480564604,
+ "mae_clean": 0.23088526782657084,
+ "ratio_mse": 1.2650421680256472,
+ "n_rows": 21055104,
+ "alias": "DLinear",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "DLinear__Weather__H96__seed42"
+ }
+}

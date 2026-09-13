@@ -1,0 +1,20 @@
+{
+  "model": "xLSTM",
+  "dataset": "ETTh1",
+  "horizon": 192,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 337233,
+  "flops_fwd": 5535731712,
+  "macs_fwd": 2767865856.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 104.523,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 4.8214,
+  "peak_train_mb": 2144.5,
+  "peak_infer_mb": 343.9,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

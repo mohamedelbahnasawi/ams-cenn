@@ -1,0 +1,66 @@
+"""Retention profile (fig05) across all seven datasets.
+
+The tau artifact stores tau = 1 - alpha (the drive weight); the plotted quantity is the retention
+alpha = 1 - tau, about 0.90.
+
+Data: the headline CeNN_AMS-Anc on all seven datasets (artifacts/tau, regenerated from the
+checkpoints by analysis/regen_artifacts.py).
+"""
+import sys, os, glob, re
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+ANALYSIS = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ANALYSIS)
+from plotting import apply_style, savefig, COL_W
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(ANALYSIS)))
+from experiments.config import CENN_MAIN_VARIANT, FIGURES_DIR  # noqa: E402
+
+TAU = os.environ.get("TAU_DIR", os.path.join(os.path.dirname(ANALYSIS), "artifacts", "tau"))
+MODEL = f"CeNN_{CENN_MAIN_VARIANT}"   # headline variant
+OUT = os.environ.get("FIG_OUT_DIR", str(FIGURES_DIR)); os.makedirs(OUT, exist_ok=True)
+SEVEN = ["ETTh1", "ETTh2", "ETTm1", "ETTm2", "Weather", "Electricity", "Traffic"]
+COLORS = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#0072B2", "#D55E00", "#666666"]
+
+pat = re.compile(r"CeNN_(.+?)__(.+?)__H(\d+)__seed(\w+)\.npz")
+byds = defaultdict(list)
+for f in sorted(glob.glob(os.path.join(TAU, "*.npz"))):
+    m = pat.match(os.path.basename(f))
+    if m and "CeNN_" + m.group(1) == MODEL:
+        byds[m.group(2)].append(f)
+
+profiles = {}
+for ds in SEVEN:
+    fs = byds.get(ds, [])
+    if not fs:
+        continue
+    chan = []
+    for f in fs:
+        d = np.load(f)
+        cells = [d[k] for k in d.files if d[k].dtype.kind == "f" and d[k].ndim >= 2]
+        tau_c = np.mean([c.reshape(c.shape[0], -1).mean(axis=1) for c in cells], axis=0)  # tau per channel
+        chan.append(1.0 - tau_c)                                                          # retention
+    profiles[ds] = np.sort(np.mean(np.stack(chan), axis=0))                               # seed-mean, sorted
+
+apply_style()
+fig, ax = plt.subplots(figsize=(COL_W, 2.7))
+for i, ds in enumerate(SEVEN):
+    if ds not in profiles:
+        continue
+    p = profiles[ds]
+    ax.plot(np.arange(len(p)), p, lw=1.1, color=COLORS[i], label=f"{ds} ({p.mean():.2f})")
+ax.set_xlabel("Hidden channel (sorted by retention)", fontsize=8.5)
+ax.set_ylabel(r"Learned retention $\alpha$", fontsize=8.5)
+ax.legend(loc="lower right", fontsize=5.8, ncol=2, handletextpad=0.4, columnspacing=0.8, framealpha=0.92)
+ax.margins(x=0.02)
+allmean = float(np.mean([profiles[d].mean() for d in profiles]))
+savefig(fig, OUT, "fig05_tau_retention")
+print("saved fig05_tau_retention ; per-dataset mean retention alpha:")
+for ds in SEVEN:
+    if ds in profiles:
+        print("  %-12s alpha=%.4f  (channels=%d)" % (ds, float(profiles[ds].mean()), len(profiles[ds])))
+print("overall mean retention alpha = %.4f" % allmean)

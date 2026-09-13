@@ -1,0 +1,20 @@
+{
+ "model": "CeNN_AMS-Anc",
+ "dataset": "Weather",
+ "horizon": 336,
+ "seed": 1,
+ "kind": "shift",
+ "level": 2.0,
+ "mse": 4.425952792913298,
+ "mae": 2.053544565223261,
+ "mse_clean": 0.2533153561205844,
+ "mae_clean": 0.30491528499871917,
+ "ratio_mse": 17.472106155326937,
+ "n_rows": 71999424,
+ "alias": "CeNN_PROBE-RevIN-LastOnly",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "CeNN_AMS-Anc__Weather__H336__seed1"
+ }
+}

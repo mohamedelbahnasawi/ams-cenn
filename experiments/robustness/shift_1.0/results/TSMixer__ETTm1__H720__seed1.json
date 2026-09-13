@@ -1,0 +1,20 @@
+{
+ "model": "TSMixer",
+ "dataset": "ETTm1",
+ "horizon": 720,
+ "seed": 1,
+ "kind": "shift",
+ "level": 1.0,
+ "mse": 1.3274583211716982,
+ "mae": 1.0348964586946152,
+ "mse_clean": 0.3634708680273528,
+ "mae_clean": 0.3952808384909598,
+ "ratio_mse": 3.652172534145986,
+ "n_rows": 54437040,
+ "alias": "TSMixer",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "TSMixer__ETTm1__H720__seed1"
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "model": "CeNN_AMS-Anc",
+ "dataset": "ETTh2",
+ "horizon": 336,
+ "seed": 1,
+ "kind": "gauss",
+ "level": 0.5,
+ "mse": 0.34288715769449624,
+ "mae": 0.4152034189010793,
+ "mse_clean": 0.3180659173278134,
+ "mae_clean": 0.38708778548925155,
+ "ratio_mse": 1.0780380387034707,
+ "n_rows": 5985840,
+ "alias": "CeNN_PROBE-RevIN-LastOnly",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "CeNN_AMS-Anc__ETTh2__H336__seed1"
+ }
+}

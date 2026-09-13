@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-ChannelGroups-G4",
+  "dataset": "Traffic",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 862,
+  "windows_batch_size": 32,
+  "params": 172222,
+  "flops_fwd": 102473728,
+  "macs_fwd": 51236864.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 146.968,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 6.9571,
+  "peak_train_mb": 861.8,
+  "peak_infer_mb": 46.7,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

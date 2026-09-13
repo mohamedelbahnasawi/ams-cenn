@@ -1,0 +1,954 @@
+import math
+import os
+from typing import List, Optional, Tuple
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Read-out nonlinearities y = f(v) passed to the next layer or the head. The feedback
+# nonlinearity A*tanh(v) is always tanh (bounded, 1-Lipschitz), which the contraction
+# bound relies on; the read-out may be unbounded since LayerNorm follows it.
+_READOUTS = {
+    "tanh": torch.tanh,
+    "gelu": F.gelu,
+    "silu": F.silu,
+    "identity": lambda x: x,
+}
+
+
+# ---------------------------------------------------------------------------
+# C1: bounded retention gate
+# ---------------------------------------------------------------------------
+class AdaptiveTauGate(nn.Module):
+    """Input-conditioned retention gate, one value per channel and time step.
+
+    alpha_c(t) = alpha_min + (alpha_max - alpha_min) * sigmoid(w_c * u_c(t) + b_c),
+    so alpha stays in [alpha_min, alpha_max] with alpha_max < 1 and each Euler step
+    contracts. tau = 1 - alpha is the step size. Element-wise gating keeps the
+    depthwise structure of the cell: 2*C parameters.
+
+    Parameters
+    ----------
+    channels : int
+        Number of hidden channels (C).
+    alpha_init : float
+        Retention rate at initialization (weights start at zero).
+    alpha_min, alpha_max : float
+        Bounds on alpha; alpha_max < 1.
+    """
+
+    def __init__(self, channels: int, alpha_init: float = 0.9,
+                 alpha_min: float = 0.5, alpha_max: float = 0.99):
+        super().__init__()
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        # bias chosen so alpha == alpha_init at init (weight starts at zero)
+        frac = (alpha_init - alpha_min) / (alpha_max - alpha_min)
+        frac = min(max(frac, 1e-4), 1.0 - 1e-4)
+        bias_init = math.log(frac) - math.log(1.0 - frac)
+        # Per-channel element-wise gate: alpha_c = bound(sigmoid(weight_c * u_c + bias_c))
+        self.weight = nn.Parameter(torch.zeros(channels))
+        self.bias = nn.Parameter(torch.full((channels,), bias_init))
+
+    def forward(self, u: torch.Tensor) -> torch.Tensor:
+        """
+        u : [B, C, L]  — external input in channels-first layout.
+        Returns alpha : [B, C, L] bounded in [alpha_min, alpha_max].
+        """
+        s = torch.sigmoid(
+            self.weight.unsqueeze(0).unsqueeze(-1) * u
+            + self.bias.unsqueeze(0).unsqueeze(-1)
+        )
+        return self.alpha_min + (self.alpha_max - self.alpha_min) * s
+
+
+# ---------------------------------------------------------------------------
+# Context/volatility-aware tau gate (optional variant)
+# ---------------------------------------------------------------------------
+class ContextTauGate(nn.Module):
+    """Retention gate conditioned on a local window of u and its local volatility.
+
+    alpha_c(t) = bound(sigmoid(depthwise_conv(u)_c(t) + w_vol_c * vol_c(t) + b_c)), where vol is
+    the moving average of |u(t) - u(t-1)| over ctx steps. Bounded in [alpha_min, alpha_max] like
+    AdaptiveTauGate, so the per-step contraction is unchanged. Selected with CENN_GATE_TYPE=context;
+    CENN_GATE_CTX and CENN_GATE_WVOL override ctx and w_vol_init.
+    """
+
+    def __init__(self, channels: int, alpha_init: float = 0.9,
+                 alpha_min: float = 0.5, alpha_max: float = 0.99,
+                 ctx: int = None, w_vol_init: float = None):
+        super().__init__()
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        ctx = int(os.environ.get("CENN_GATE_CTX", ctx if ctx is not None else 15))
+        w_vol_init = float(os.environ.get("CENN_GATE_WVOL", w_vol_init if w_vol_init is not None else 1.0))
+        self.ctx = ctx
+        pad = ctx // 2
+        self.ctx_conv = nn.Conv1d(channels, channels, kernel_size=ctx,
+                                  padding=pad, groups=channels)   # depthwise local context
+        self.w_vol = nn.Parameter(torch.full((channels,), w_vol_init))  # per-channel volatility weight
+        frac = (alpha_init - alpha_min) / (alpha_max - alpha_min)
+        frac = min(max(frac, 1e-4), 1.0 - 1e-4)
+        bias_init = math.log(frac) - math.log(1.0 - frac)
+        self.bias = nn.Parameter(torch.full((channels,), bias_init))
+        nn.init.zeros_(self.ctx_conv.weight)
+        nn.init.zeros_(self.ctx_conv.bias)
+
+    def forward(self, u: torch.Tensor) -> torch.Tensor:
+        """u : [B, C, L]. Returns alpha : [B, C, L] bounded in [alpha_min, alpha_max]."""
+        pad = self.ctx // 2
+        du = (u - F.pad(u, (1, 0))[:, :, :-1]).abs()                       # local roughness |Δu|
+        vol = F.avg_pool1d(du, kernel_size=self.ctx, stride=1, padding=pad)  # smoothed -> volatility
+        s = torch.sigmoid(self.ctx_conv(u)
+                          + self.w_vol.view(1, -1, 1) * vol
+                          + self.bias.view(1, -1, 1))
+        return self.alpha_min + (self.alpha_max - self.alpha_min) * s
+
+
+# ---------------------------------------------------------------------------
+# VarMix: Dense topology-free cross-variable mixer
+# ---------------------------------------------------------------------------
+class VarMix(nn.Module):
+    """Dense topology-free cross-variable mixer.
+
+    Learns a V x V mixing matrix without assuming spatial adjacency
+    or shift equivariance across variables.
+
+    Identity-initialized with gated residual: starts as no-op,
+    then learns useful mixing.  x_out = x + gate * (Linear(x) - x).
+    """
+
+    def __init__(self, n_vars: int, gate_init: float = 0.01):
+        super().__init__()
+        self.mix = nn.Linear(n_vars, n_vars)
+        nn.init.eye_(self.mix.weight)
+        nn.init.zeros_(self.mix.bias)
+        # Small positive init so gradients flow through both gate and mix
+        # from the start (gate=0 would create a dead gradient).
+        self.gate = nn.Parameter(torch.tensor([gate_init]))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x: [B, T, V] -> [B, T, V]"""
+        return x + self.gate * (self.mix(x) - x)
+
+
+# ---------------------------------------------------------------------------
+# STAR: O(V) cross-variable core (SOFTS-style Aggregate-Redistribute)
+# ---------------------------------------------------------------------------
+class STAR(nn.Module):
+    """STAR aggregate-redistribute cross-variable core (after SOFTS, Han et al. 2024), applied
+    per time step to scalar variables.
+
+    Each variable value is embedded (1 -> d_core); a shared scalar score per variable gives one
+    softmax weighting over the V variables; the core is the weighted mean of the embeddings;
+    each variable is updated from [own embedding ; core]. Interaction goes through the single
+    core, so compute is O(V) per time step (VarMix is O(V^2)) and the parameter count does not
+    depend on V. SOFTS embeds a whole series token; here each variable contributes one scalar
+    per time step.
+
+    redistribute is zero-initialized, so the module is the identity at init.
+    Interface matches VarMix: [B, T, V] -> [B, T, V].
+    """
+
+    def __init__(self, n_vars: int, d_core: int = 16, gate_init: float = 0.01):
+        super().__init__()
+        self.n_vars = n_vars  # interface parity with VarMix; weights are V-independent
+        self.up = nn.Linear(1, d_core)               # per-variable scalar -> embedding
+        self.score = nn.Linear(d_core, 1)            # SOFTS aggregate: one scalar score / variable
+        self.redistribute = nn.Linear(2 * d_core, 1)  # [own ; core] -> scalar update
+        nn.init.zeros_(self.redistribute.weight)      # delta == 0 at init -> exact no-op
+        nn.init.zeros_(self.redistribute.bias)
+        self.gate = nn.Parameter(torch.tensor([gate_init]))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x: [B, T, V] -> [B, T, V]"""
+        h = self.up(x.unsqueeze(-1))                  # [B, T, V, d_core]
+        w = torch.softmax(self.score(h), dim=2)       # [B, T, V, 1]  one weight per variable, over V
+        core = (h * w).sum(dim=2, keepdim=True)       # [B, T, 1, d_core]  (aggregate)
+        core = core.expand(-1, -1, h.size(2), -1)     # [B, T, V, d_core]  (broadcast)
+        combined = torch.cat([h, core], dim=-1)       # [B, T, V, 2*d_core]
+        delta = self.redistribute(combined).squeeze(-1)  # [B, T, V]       (redistribute)
+        return x + self.gate * delta                  # gated residual (no-op at init)
+
+
+# ---------------------------------------------------------------------------
+# CeNNCell1D
+# ---------------------------------------------------------------------------
+class CeNNCell1D(nn.Module):
+    def __init__(
+        self,
+        channels: int,
+        neighborhood: int = 3,
+        alpha_init: float = 0.9,
+        enforce_bistability: bool = False,
+        cross_channel: bool = False,
+        channel_groups: int = 1,
+        adaptive_tau: bool = False,   # C1
+        dilation: int = 1,            # C2
+        alpha_min: float = 0.5,       # bounded-gate lower bound
+        alpha_max: float = 0.99,      # bounded-gate upper bound (<1)
+        spectral_cap: bool = True,    # cap ||A_eff|| < 1 (contraction)
+        spectral_rho: float = 0.9,    # target operator-norm bound (<1)
+        readout_act: str = "tanh",    # read-out nonlinearity (feedback stays tanh)
+    ):
+        super().__init__()
+        assert neighborhood % 2 == 1, "Neighborhood size must be odd"
+        if readout_act not in _READOUTS:
+            raise ValueError(f"readout_act must be one of {set(_READOUTS)}, got {readout_act!r}")
+        self.readout = _READOUTS[readout_act]
+
+        self.adaptive_tau = adaptive_tau
+        self.dilation = dilation
+        self.alpha_min = alpha_min
+        self.alpha_max = alpha_max
+        self.spectral_cap = spectral_cap
+        self.spectral_rho = spectral_rho
+
+        center  = neighborhood // 2
+        padding = dilation * center   # C2: adjust padding for dilation
+
+        # Channel grouping: channel_groups=1 → depthwise (default),
+        # channel_groups=channels → full cross-channel,
+        # intermediate values → grouped convolution.
+        if cross_channel:
+            groups = 1  # backward compat
+        elif channel_groups > 1:
+            assert channels % channel_groups == 0, (
+                f"channels ({channels}) must be divisible by "
+                f"channel_groups ({channel_groups})"
+            )
+            groups = channels // channel_groups
+        else:
+            groups = channels
+
+        self.A = nn.Conv1d(
+            channels, channels, neighborhood,
+            padding=padding, dilation=dilation,
+            groups=groups, bias=False,
+        )
+        self.B = nn.Conv1d(
+            channels, channels, neighborhood,
+            padding=padding, dilation=dilation,
+            groups=groups, bias=False,
+        )
+        self.I = nn.Parameter(torch.zeros(1, channels, 1))
+
+        self.enforce_bistability = enforce_bistability
+        self.cross_channel = cross_channel
+
+        # Causal mask: keep current and past, zero future taps
+        causal_mask = torch.zeros(neighborhood)
+        causal_mask[:center + 1] = 1.0
+        self.register_buffer('causal_mask', causal_mask.view(1, 1, -1))
+
+        # C1: input-conditioned gate or a fixed learnable alpha; both bounded in [alpha_min, alpha_max]
+        if adaptive_tau:
+            # CENN_GATE_TYPE=context selects ContextTauGate; default is the pointwise gate.
+            _gate_cls = (ContextTauGate if os.environ.get("CENN_GATE_TYPE") == "context"
+                         else AdaptiveTauGate)
+            self.tau_gate = _gate_cls(
+                channels, alpha_init=alpha_init,
+                alpha_min=alpha_min, alpha_max=alpha_max,
+            )
+            self.last_tau: Optional[torch.Tensor] = None  # for visualization
+        else:
+            # Bound the fixed alpha into [alpha_min, alpha_max] too.
+            frac = (alpha_init - alpha_min) / (alpha_max - alpha_min)
+            frac = min(max(frac, 1e-4), 1.0 - 1e-4)
+            alpha_logit_init = math.log(frac) - math.log(1.0 - frac)
+            self.alpha_logit = nn.Parameter(
+                torch.tensor(alpha_logit_init, dtype=torch.float32)
+            )
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.A.weight)
+        nn.init.xavier_uniform_(self.B.weight)
+        nn.init.zeros_(self.I)
+
+    def precompute(self, u: torch.Tensor):
+        """Terms that do not depend on the state v, computed once per forward before the K-loop.
+
+        Returns a dict with alpha, beta, the masked (and capped) feedback weight wA and the
+        control signal B*u + I.
+        """
+        # --- Integration parameters (depend on u, not v); bounded in [alpha_min, alpha_max] ---
+        if self.adaptive_tau:
+            alpha = self.tau_gate(u)        # [B, C, L], bounded in [alpha_min, alpha_max]
+            self.last_tau = (1.0 - alpha).detach()  # tau = 1 - alpha (for visualization)
+            beta  = 1.0 - alpha
+        else:
+            alpha = self.alpha_min + (self.alpha_max - self.alpha_min) * torch.sigmoid(self.alpha_logit)
+            beta  = 1.0 - alpha
+
+        # --- Masked weights (constant across K iterations) ---
+        causal = self.causal_mask
+        wA = self.A.weight * causal
+        wB = self.B.weight * causal
+
+        # --- Spectral cap: scale the masked feedback kernel so its per-output-channel L1 norm
+        # (an upper bound on the conv operator 2-norm) is at most rho < 1. With alpha_max < 1
+        # this gives alpha + beta*||A|| < 1 at every forward, so training cannot push A into
+        # the expansive regime. The sum runs over input channels per group (dim=1) and taps
+        # (dim=2); taps alone would be loose for channel_groups > 1.
+        if self.spectral_cap:
+            kernel_l1 = wA.abs().sum(dim=(1, 2), keepdim=True)  # [Cout, 1, 1]
+            wA = wA * (self.spectral_rho / kernel_l1.clamp(min=self.spectral_rho))
+
+        if self.enforce_bistability and not self.cross_channel:
+            c = self.A.kernel_size[0] // 2
+            left   = wA[:, :, :c]
+            center = torch.clamp(wA[:, :, c], min=1.0).unsqueeze(-1)
+            right  = wA[:, :, c + 1:]
+            wA = torch.cat([left, center, right], dim=2)
+
+        # --- Control signal B*u + I (constant across K iterations) ---
+        control = F.conv1d(
+            u, wB,
+            padding=self.B.padding[0],
+            dilation=self.dilation,
+            groups=self.B.groups,
+        ) + self.I
+
+        return {
+            "alpha": alpha, "beta": beta,
+            "wA": wA, "control": control,
+        }
+
+    def _feedback(self, v: torch.Tensor, cache: dict) -> torch.Tensor:
+        """Compute A*tanh(v) using the cached (masked + capped) weight."""
+        return F.conv1d(
+            torch.tanh(v), cache["wA"],
+            padding=self.A.padding[0],
+            dilation=self.dilation,
+            groups=self.A.groups,
+        )
+
+    def step(self, v: torch.Tensor, cache: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Forward-Euler step for the cell ODE dv/dt = -v + g(v), g = A*tanh(v) + control.
+
+        With step size h = beta = 1-alpha: v_next = v + h*(-v + g) = alpha*v + beta*g.
+        """
+        v_next = cache["alpha"] * v + cache["beta"] * (self._feedback(v, cache) + cache["control"])
+        return v_next, self.readout(v_next)
+
+    def exp_euler_step(self, v: torch.Tensor, cache: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Exponential-Euler step: the linear leak -v is integrated exactly over the step.
+
+        For dv/dt = -v + g with g = A*tanh(v) + control frozen over the step,
+        v_next = e^{-h} v + (1 - e^{-h}) g with h = 1 - alpha, so e^{-h} = e^{alpha-1}.
+        Unconditionally stable for the linear part. One feedback conv per step.
+        """
+        alpha_exp = torch.exp(cache["alpha"] - 1.0)        # e^{-h}, h = 1-alpha
+        beta_exp = 1.0 - alpha_exp
+        g = self._feedback(v, cache) + cache["control"]
+        v_next = alpha_exp * v + beta_exp * g
+        return v_next, self.readout(v_next)
+
+    def heun_step(self, v: torch.Tensor, cache: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Heun (RK2) step for dv/dt = -v + g(v).
+
+        With the Euler map E(v) = alpha*v + beta*g(v):
+            v_euler = E(v)
+            v_corr  = E(v_euler)
+            v_next  = 0.5 * (v + v_corr)
+        Two feedback convs per step; second-order accurate.
+        """
+        v_euler = cache["alpha"] * v + cache["beta"] * (self._feedback(v, cache) + cache["control"])
+        v_corr  = cache["alpha"] * v_euler + cache["beta"] * (self._feedback(v_euler, cache) + cache["control"])
+        v_next  = 0.5 * (v + v_corr)
+        return v_next, self.readout(v_next)
+
+    def rk4_step(self, v: torch.Tensor, cache: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Classical RK4 step: four feedback evaluations per iteration."""
+        def F(v_):
+            return cache["alpha"] * v_ + cache["beta"] * (self._feedback(v_, cache) + cache["control"]) - v_
+        k1 = F(v)
+        k2 = F(v + 0.5 * k1)
+        k3 = F(v + 0.5 * k2)
+        k4 = F(v + k3)
+        v_next = v + (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
+        return v_next, self.readout(v_next)
+
+    def forward(
+        self, v: torch.Tensor, u: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        v : [B, C, L]  hidden state
+        u : [B, C, L]  external input
+        returns: (v_next, y_next)
+
+        Backward-compatible single-step interface (used when K-loop
+        is managed externally by CeNNLayer1D).
+        """
+        cache = self.precompute(u)
+        return self.step(v, cache)
+
+
+# ---------------------------------------------------------------------------
+# CeNNLayer1D
+# ---------------------------------------------------------------------------
+class CeNNLayer1D(nn.Module):
+    def __init__(self, channels: int, K: int, pointwise_mix: bool = False,
+                 integrator: str = "euler", **cell_kwargs):
+        super().__init__()
+        self.K = K
+        _VALID = {"euler", "exp_euler", "heun", "rk4"}
+        if integrator not in _VALID:
+            raise ValueError(f"integrator must be one of {_VALID}, got {integrator!r}")
+        self.integrator = integrator
+        self.cell = CeNNCell1D(channels, **cell_kwargs)
+
+        if pointwise_mix:
+            self.pointwise = nn.Conv1d(channels, channels, 1)
+            nn.init.eye_(self.pointwise.weight.squeeze(-1))
+            nn.init.zeros_(self.pointwise.bias)
+        else:
+            self.pointwise = None
+
+    def forward(self, u: torch.Tensor):  # u [B, C, L]
+        cache = self.cell.precompute(u)
+        v = torch.zeros_like(u)
+        if self.integrator == "euler":
+            step_fn = self.cell.step
+        elif self.integrator == "exp_euler":
+            step_fn = self.cell.exp_euler_step
+        elif self.integrator == "heun":
+            step_fn = self.cell.heun_step
+        else:  # rk4
+            step_fn = self.cell.rk4_step
+        for _ in range(self.K):
+            v, y = step_fn(v, cache)
+        if self.pointwise is not None:
+            y = self.pointwise(y)
+        return y
+
+
+# ---------------------------------------------------------------------------
+# Block normalization
+# ---------------------------------------------------------------------------
+class ChannelAffine(nn.Module):
+    """Per-channel scale and bias, no statistics. Stand-in for LayerNorm inside the cellular
+    block when the block must map onto a cellular array: one multiply-add per cell instead of
+    a mean, variance, square root and division per time step. Channels-last input [B, L, C]."""
+    def __init__(self, channels: int):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(channels))
+        self.bias = nn.Parameter(torch.zeros(channels))
+
+    def forward(self, x):
+        return x * self.weight + self.bias
+
+
+def make_block_norm(kind: str, channels: int) -> nn.Module:
+    """Block normalization by name: 'layernorm', 'affine' (ChannelAffine) or 'none' (identity)."""
+    if kind == "layernorm":
+        return nn.LayerNorm(channels)
+    if kind == "affine":
+        return ChannelAffine(channels)
+    if kind == "none":
+        return nn.Identity()
+    raise ValueError(f"block_norm must be layernorm|affine|none, got {kind!r}")
+
+
+# ---------------------------------------------------------------------------
+# ResidualNorm1D
+# ---------------------------------------------------------------------------
+class ResidualNorm1D(nn.Module):
+    def __init__(self, channels: int, dropout: float, block_norm: str = "layernorm"):
+        super().__init__()
+        self.norm = make_block_norm(block_norm, channels)
+        self.drop = nn.Dropout(dropout)
+
+    def forward(self, x, sublayer):
+        x_t = x.transpose(1, 2)
+        normed = self.norm(x_t).transpose(1, 2)
+        return x + self.drop(sublayer(normed))
+
+
+# ---------------------------------------------------------------------------
+# C2: Dilation schedule helpers
+# ---------------------------------------------------------------------------
+def _build_dilation_schedule(num_layers: int, schedule: str) -> List[int]:
+    """Return a list of dilation values, one per layer.
+
+    Parameters
+    ----------
+    num_layers : int
+    schedule : str
+        "none"        — all layers use dilation=1  (baseline)
+        "exponential" — [1, 2, 4, 8, …]  (doubles each layer)
+    """
+    if schedule == "none":
+        return [1] * num_layers
+    if schedule == "exponential":
+        return [2 ** i for i in range(num_layers)]
+    raise ValueError(f"Unknown dilation schedule: {schedule}")
+
+
+# ---------------------------------------------------------------------------
+# CeNNBlock1D
+# ---------------------------------------------------------------------------
+class CeNNBlock1D(nn.Module):
+    def __init__(
+        self,
+        channels: int,
+        K: int,
+        num_layers: int,
+        dropout: float,
+        dilation_schedule: str = "none",  # C2 dilated-template path
+        channel_groups: int = 1,
+        pointwise_mix: bool = False,
+        integrator: str = "euler",        # integrator selector
+        **cell_kwargs,
+    ):
+        super().__init__()
+
+        dilations = _build_dilation_schedule(num_layers, dilation_schedule)
+
+        self.layers = nn.ModuleList([
+            ResidualNorm1D(channels=channels, dropout=dropout)
+            for _ in range(num_layers)
+        ])
+
+        self.ce_nn_layers = nn.ModuleList([
+            CeNNLayer1D(
+                channels=channels, K=K,
+                pointwise_mix=pointwise_mix,
+                integrator=integrator,
+                dilation=d, channel_groups=channel_groups,
+                **cell_kwargs,
+            )
+            for d in dilations
+        ])
+
+        self.final_norm = nn.LayerNorm(channels)
+
+    def forward(self, x):
+        for layer, cenn in zip(self.layers, self.ce_nn_layers):
+            x = layer(x, cenn)
+        return self.final_norm(x.transpose(1, 2)).transpose(1, 2)
+
+
+# ---------------------------------------------------------------------------
+# Parallel multi-scale ensemble block
+# ---------------------------------------------------------------------------
+class MultiScaleCeNNBlock1D(nn.Module):
+    """Parallel CeNN branches at different dilations, outputs averaged.
+
+    n_scales CeNNLayer1D branches see the same normalized input at different dilations;
+    their mean is the residual correction, and one ResidualNorm1D wraps the ensemble.
+    The mean (not the sum) keeps the correction at the magnitude of a single CeNNLayer1D,
+    so the block is comparable to the sequential CeNNBlock1D.
+    """
+
+    def __init__(
+        self,
+        channels: int,
+        K: int,
+        dropout: float,
+        n_scales: int = 4,
+        channel_groups: int = 1,
+        pointwise_mix: bool = False,
+        integrator: str = "euler",
+        dilations: Optional[List[int]] = None,   # explicit dilation list, e.g. seasonal {1,24,48,168} (default: powers of two)
+        block_norm: str = "layernorm",           # in-block normalization: "layernorm" | "affine" | "none"
+        **cell_kwargs,
+    ):
+        super().__init__()
+        # Default dilations are powers of two. A seasonal list such as {1, 24, 48, 168} on hourly
+        # data makes a branch compare t, t-24, t-48 (same phase across periods).
+        dilations = list(dilations) if dilations else [2 ** i for i in range(n_scales)]
+        self.res = ResidualNorm1D(channels=channels, dropout=dropout, block_norm=block_norm)
+        self.branches = nn.ModuleList([
+            CeNNLayer1D(
+                channels=channels, K=K,
+                pointwise_mix=pointwise_mix,
+                integrator=integrator,
+                dilation=d, channel_groups=channel_groups,
+                **cell_kwargs,
+            )
+            for d in dilations
+        ])
+        self.final_norm = make_block_norm(block_norm, channels)
+
+    def _ensemble(self, x: torch.Tensor) -> torch.Tensor:
+        """Run all branches in parallel and average (mean) their outputs."""
+        out = self.branches[0](x)
+        for branch in self.branches[1:]:
+            out = out + branch(x)
+        return out / len(self.branches)
+
+    def forward(self, x):
+        x = self.res(x, self._ensemble)
+        return self.final_norm(x.transpose(1, 2)).transpose(1, 2)
+
+    def forward_branches(self, x):
+        """Block output of each branch alone: final_norm(x + branch_i(norm(x))), the same residual
+        and norm as forward() without the averaging. Returns a list of [B, C, L].
+        Eval mode only; dropout would add noise to the per-scale spread."""
+        if self.training:
+            raise RuntimeError("forward_branches() requires eval mode (model.eval()): "
+                               "active dropout corrupts the scale-disagreement spread.")
+        outs = []
+        for branch in self.branches:
+            xb = self.res(x, branch)
+            outs.append(self.final_norm(xb.transpose(1, 2)).transpose(1, 2))
+        return outs
+
+
+# ---------------------------------------------------------------------------
+# CeNNStack1D
+# ---------------------------------------------------------------------------
+class CeNNStack1D(nn.Module):
+    def __init__(
+        self,
+        N: int,
+        channels: int,
+        K: int,
+        dropout: float,
+        num_layers: int = 3,
+        dilation_schedule: str = "none",
+        multiscale_mode: str = "none",    # "none" | "parallel_ensemble"
+        channel_groups: int = 1,
+        pointwise_mix: bool = False,
+        integrator: str = "euler",        # integrator selector
+        dilations: Optional[List[int]] = None,   # explicit dilations for the parallel ensemble
+        block_norm: str = "layernorm",           # normalization inside the parallel-ensemble block
+        **cell_kwargs,
+    ):
+        super().__init__()
+        _VALID_MS = {"none", "parallel_ensemble"}
+        if multiscale_mode not in _VALID_MS:
+            raise ValueError(f"multiscale_mode must be one of {_VALID_MS}, got {multiscale_mode!r}")
+
+        if multiscale_mode == "parallel_ensemble":
+            self.blocks = nn.ModuleList([
+                MultiScaleCeNNBlock1D(
+                    channels=channels, K=K,
+                    dropout=dropout,
+                    n_scales=num_layers,  # n_scales == num_layers: keeps block depth comparable
+                    dilations=dilations,
+                    block_norm=block_norm,
+                    channel_groups=channel_groups,
+                    pointwise_mix=pointwise_mix,
+                    integrator=integrator,
+                    **cell_kwargs,
+                )
+                for _ in range(N)
+            ])
+        else:
+            self.blocks = nn.ModuleList([
+                CeNNBlock1D(
+                    channels=channels, K=K,
+                    num_layers=num_layers,
+                    dropout=dropout,
+                    dilation_schedule=dilation_schedule,
+                    channel_groups=channel_groups,
+                    pointwise_mix=pointwise_mix,
+                    integrator=integrator,
+                    **cell_kwargs,
+                )
+                for _ in range(N)
+            ])
+
+    def forward(self, x):
+        for blk in self.blocks:
+            x = blk(x)
+        return x
+
+    def forward_branches(self, x):
+        """Per-branch latents of the single parallel-ensemble block.
+        Requires multiscale_mode='parallel_ensemble' and N=1."""
+        if len(self.blocks) != 1 or not isinstance(self.blocks[0], MultiScaleCeNNBlock1D):
+            raise ValueError(
+                "forward_branches requires a single parallel-ensemble block "
+                "(multiscale_mode='parallel_ensemble', N=1)")
+        return self.blocks[0].forward_branches(x)
+
+
+# ---------------------------------------------------------------------------
+# Trunks and top-level model
+# ---------------------------------------------------------------------------
+class _MLPMixerTrunk(nn.Module):
+    """MLP-Mixer trunk used as a generic-capacity control for the CeNN stack: same input_proj,
+    head and linear skip, with the cellular dynamics replaced by stacked (time-mix, channel-mix)
+    MLP blocks. Maps [B, C, L] -> [B, C, L]. No recurrence, gate, dilation ensemble or
+    integrator, and no forward_branches."""
+    def __init__(self, channels: int, seq_len: int, num_layers: int, dropout: float,
+                 token_hidden: int = 64):
+        super().__init__()
+        th = min(token_hidden, seq_len)
+        self.blocks = nn.ModuleList([
+            nn.ModuleDict({
+                "norm1": nn.LayerNorm(channels),
+                "time": nn.Sequential(nn.Linear(seq_len, th), nn.GELU(),
+                                      nn.Dropout(dropout), nn.Linear(th, seq_len)),
+                "norm2": nn.LayerNorm(channels),
+                "chan": nn.Sequential(nn.Linear(channels, channels), nn.GELU(),
+                                      nn.Dropout(dropout), nn.Linear(channels, channels)),
+            }) for _ in range(max(2, num_layers))
+        ])
+
+    def forward(self, u: torch.Tensor) -> torch.Tensor:  # u [B, C, L] -> [B, C, L]
+        x = u.transpose(1, 2)                              # [B, L, C]
+        for b in self.blocks:
+            y = b["norm1"](x).transpose(1, 2)              # [B, C, L]
+            y = b["time"](y).transpose(1, 2)               # [B, L, C]  (time mixing, per channel)
+            x = x + y
+            x = x + b["chan"](b["norm2"](x))               # channel mixing, per time step
+        return x.transpose(1, 2)                            # [B, C, L]
+
+
+class CeNNModel1D(nn.Module):
+    def __init__(
+        self,
+        n_features: int,
+        seq_length: int,
+        pred_length: int,
+        *,
+        hidden_dim: int,
+        N: int,
+        K: int,
+        dropout: float,
+        num_layers: int,
+        output_multiplier: int = 1,
+        adaptive_tau: bool = False,           # C1
+        dilation_schedule: str = "none",      # C2 (dilated-template path)
+        multiscale_mode: str = "none",        # C2 (parallel-ensemble path)
+        integrator: str = "euler",            # step integrator
+        var_mix: bool = False,                # VM: dense V×V cross-variable mixing (legacy bool)
+        cross_var: str = "none",              # input cross-var mixer {none, varmix, star}
+        pointwise_mix: bool = False,          # VM: latent channel mixing
+        channel_groups: int = 1,              # grouped cross-channel convolution
+        patch_len: Optional[int] = None,      # input patching
+        stride: Optional[int] = None,         # input patching
+        head_type: str = "linear",            # "linear" or "mlp"
+        linear_skip: bool = False,            # linear path from the input added to the output
+        trunk_type: str = "cenn",             # "cenn", "mlp" (generic-trunk control) or "none" (skip only)
+        dilations: Optional[List[int]] = None,  # explicit dilation list for the parallel ensemble
+        block_norm: str = "layernorm",          # LayerNorm | per-channel affine | none inside the block
+        revin: bool = False,                  # in-model reversible instance normalization (AMS-CeNN: True)
+        revin_mode: str = "mean",             # "mean" (RevIN) | "last" (NLinear anchor + std) | "last_only" (NLinear anchor, no std) | "last_mad" (anchor + robust MAD scale)
+        trunk_squash: bool = False,           # trunk sees tanh(normalized input); the linear skip sees it unsquashed
+        **cell_kwargs,
+    ):
+        super().__init__()
+        self.seq_length = seq_length
+        self.pred_length = pred_length
+        self.n_features = n_features
+        self.output_multiplier = output_multiplier
+        self.linear_skip = linear_skip
+        self.patch_len = patch_len
+        # Set transiently by the experiment runner: forward() then returns the forecast of
+        # one dilation branch (see forward_branches).
+        self._uq_branch_idx: Optional[int] = None
+
+        if hidden_dim is None:
+            hidden_dim = n_features
+
+        # --- Cross-variable coupling (before embedding) ---
+        # Resolve the input mixer from cross_var; var_mix=True is the legacy alias
+        # for cross_var="varmix" (cross_var takes precedence when set non-"none").
+        resolved_cross_var = cross_var
+        if cross_var == "none" and var_mix:
+            resolved_cross_var = "varmix"
+        if resolved_cross_var not in ("none", "varmix", "star"):
+            raise ValueError(
+                f"cross_var must be one of {{none, varmix, star}}, got {cross_var!r}"
+            )
+        self.var_mixer: Optional[nn.Module] = None
+        if n_features > 1:
+            if resolved_cross_var == "varmix":
+                self.var_mixer = VarMix(n_features)          # dense O(V^2)
+            elif resolved_cross_var == "star":
+                self.var_mixer = STAR(n_features)            # O(V) core
+
+        # --- Input embedding ---
+        if patch_len is not None:
+            # Patching: unfold input into patches, project each patch
+            if stride is None:
+                stride = patch_len  # non-overlapping by default
+            self.stride = stride
+            # Pad input so last patch is complete
+            self.pad_len = (
+                stride - (seq_length - patch_len) % stride
+            ) % stride
+            padded_len = seq_length + self.pad_len
+            self.num_patches = (padded_len - patch_len) // stride + 1
+            self.patch_proj = nn.Linear(n_features * patch_len, hidden_dim)
+            self.input_dropout = nn.Dropout(dropout)
+            stack_seq_len = self.num_patches
+        else:
+            self.input_proj = nn.Linear(n_features, hidden_dim)
+            self.input_dropout = nn.Dropout(dropout)
+            stack_seq_len = seq_length
+
+        self.trunk_type = trunk_type
+        if trunk_type == "mlp":
+            # Generic-trunk control: an MLP-Mixer replaces the CeNN dynamics; input_proj, head and
+            # linear skip are unchanged. cell_kwargs (gate, cap, integrator) are unused here.
+            # Two blocks and a 32-wide token bottleneck keep the trunk within about 1.5-2x of the
+            # CeNN stack's parameter count; report both counts when comparing.
+            self.stack = _MLPMixerTrunk(
+                channels=hidden_dim, seq_len=stack_seq_len,
+                num_layers=2, dropout=dropout, token_hidden=32,
+            )
+        elif trunk_type == "cenn":
+            self.stack = CeNNStack1D(
+                N=N,
+                channels=hidden_dim,
+                K=K,
+                dropout=dropout,
+                num_layers=num_layers,
+                dilation_schedule=dilation_schedule,
+                multiscale_mode=multiscale_mode,
+                integrator=integrator,
+                dilations=dilations,
+                block_norm=block_norm,
+                adaptive_tau=adaptive_tau,
+                pointwise_mix=pointwise_mix,
+                channel_groups=channel_groups,
+                **cell_kwargs,
+            )
+        elif trunk_type == "none":
+            # Skip-only control: no nonlinear trunk, the forecast is the zero-init linear
+            # residual alone. Requires linear_skip=True.
+            if not linear_skip:
+                raise ValueError("trunk_type='none' requires linear_skip=True (no path otherwise)")
+            self.stack = None
+        else:
+            raise ValueError(f"trunk_type must be 'cenn', 'mlp' or 'none', got {trunk_type!r}")
+
+        # --- Prediction head ---
+        if head_type == "mlp":
+            self.pred_proj = nn.Sequential(
+                nn.Linear(stack_seq_len, hidden_dim),
+                nn.GELU(),
+                nn.Dropout(dropout),
+                nn.Linear(hidden_dim, pred_length),
+            )
+        else:
+            self.pred_proj = nn.Linear(stack_seq_len, pred_length)
+
+        self.pred_head = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, n_features * output_multiplier),
+        )
+
+        # Linear residual (DLinear/NLinear-style): Linear(L -> H) from the normalized input to the
+        # forecast, shared across variables, zero-initialized, added to the trunk output. Only
+        # active for output_multiplier == 1 (point losses); disabled for probabilistic losses.
+        # In-model reversible instance normalization, per window and per variable: subtract the
+        # lookback mean (revin_mode="mean") or the last value ("last*"), optionally divide by the
+        # lookback std or a MAD scale, apply a per-variable affine, forecast, invert. The loss is
+        # then computed on the original scale, unlike the NeuralForecast per-window scaler, which
+        # also rescales the target. PatchTST, TSMixer, iTransformer and TimeMixer carry the same
+        # mechanism by default in NeuralForecast (revin / use_norm). AMS-CeNN uses revin=True,
+        # revin_mode="last_only".
+        self.revin = revin
+        if revin_mode not in ("mean", "last", "last_only", "last_mad"):
+            raise ValueError(f"revin_mode must be mean|last|last_only|last_mad, got {revin_mode!r}")
+        self.revin_mode = revin_mode
+        # trunk_squash: the trunk sees tanh(x), so a spike has bounded effect on the dynamics;
+        # the linear skip still sees the unsquashed window.
+        self.trunk_squash = trunk_squash
+        if revin:
+            if output_multiplier != 1:
+                raise ValueError("revin=True requires a point loss (output_multiplier == 1)")
+            self.revin_weight = nn.Parameter(torch.ones(n_features))
+            self.revin_bias = nn.Parameter(torch.zeros(n_features))
+            self.revin_eps = 1e-5
+
+        if linear_skip:
+            self.skip = nn.Linear(seq_length, pred_length)
+            nn.init.zeros_(self.skip.weight)
+            nn.init.zeros_(self.skip.bias)
+
+        if self.stack is None:
+            # Skip-only control: forward() returns the skip directly, so the projection and head
+            # modules would never receive a gradient. Drop them so the parameter count and the
+            # checkpoint describe the model that actually runs.
+            for _unused in ("input_proj", "patch_proj", "pred_proj", "pred_head",
+                            "var_mixer", "input_dropout"):
+                if getattr(self, _unused, None) is not None:
+                    setattr(self, _unused, None)
+
+    def _embed(self, x):  # x [B, L, V] -> u [B, hidden_dim, L_or_patches]
+        # --- cross-variable coupling (VarMix / STAR) ---
+        if self.var_mixer is not None:
+            x = self.var_mixer(x)
+        if self.patch_len is not None:
+            # Patching path
+            B, L, C = x.shape
+            if self.pad_len > 0:                          # pad so the last patch is complete
+                x = F.pad(x, (0, 0, 0, self.pad_len), mode='replicate')
+            x = x.unfold(1, self.patch_len, self.stride)  # [B, num_patches, C, patch_len]
+            x = x.permute(0, 1, 3, 2)                     # [B, num_patches, patch_len, C]
+            x = x.reshape(B, self.num_patches, -1)         # [B, num_patches, patch_len * C]
+            x = self.input_dropout(self.patch_proj(x))     # [B, num_patches, hidden_dim]
+            return x.permute(0, 2, 1)                      # [B, hidden_dim, num_patches]
+        x = self.input_dropout(self.input_proj(x))
+        return x.permute(0, 2, 1)
+
+    def _head(self, y):  # y [B, hidden_dim, L_or_patches] -> out [B, H, V*out_mult]
+        y_proj = self.pred_proj(y).permute(0, 2, 1)
+        B, H, C = y_proj.shape
+        return self.pred_head(y_proj.reshape(B * H, C)).reshape(
+            B, H, self.n_features * self.output_multiplier
+        )
+
+    def forward(self, x):  # x [B, L, V]
+        # _uq_branch_idx (set transiently by the runner under eval) routes the forward through one
+        # dilation branch, so the NeuralForecast pipeline wraps a per-scale forecast.
+        bi = self._uq_branch_idx
+        if bi is not None:
+            return self.forward_branches(x)[bi]
+        if self.revin:
+            # Anchor: window mean (RevIN) or last lookback value (NLinear-style). The last value is
+            # the better reference for short horizons, whose target sits right after the window;
+            # the mean is the more stable reference when the level drifts over a long horizon.
+            if self.revin_mode == "mean":
+                mean = x.mean(dim=1, keepdim=True)                              # [B, 1, V]
+            else:
+                mean = x[:, -1:, :]
+            if self.revin_mode == "last_only":
+                std = torch.ones_like(mean)
+            elif self.revin_mode == "last_mad":
+                # Robust scale: 1.4826 * median absolute deviation over the window, per variable.
+                # A spike barely moves the MAD, unlike the window std. Floor of 1e-2 in the global
+                # z-scored domain so near-flat windows cannot inflate the normalized input.
+                med = x.median(dim=1, keepdim=True).values
+                mad = (x - med).abs().median(dim=1, keepdim=True).values
+                std = (1.4826 * mad).clamp_min(1e-2)
+            else:
+                std = torch.sqrt(x.var(dim=1, keepdim=True, unbiased=False) + self.revin_eps)
+            x = (x - mean) / std * self.revin_weight + self.revin_bias
+        if self.stack is None:                            # trunk_type='none': skip-only control
+            out = self.skip(x.transpose(1, 2)).transpose(1, 2)
+        else:
+            x_trunk = torch.tanh(x) if self.trunk_squash else x
+            out = self._head(self.stack(self._embed(x_trunk)))
+            if self.linear_skip and self.output_multiplier == 1:
+                # raw linear path: [B, L, V] -> per-variable Linear(L->H) (shared) -> [B, H, V]
+                out = out + self.skip(x.transpose(1, 2)).transpose(1, 2)
+        if self.revin:
+            out = (out - self.revin_bias) / (self.revin_weight + self.revin_eps * self.revin_eps)
+            out = out * std + mean
+        return out
+
+    def forward_branches(self, x):  # x [B, L, V] -> [n_branches, B, H, V*out_mult]
+        """Forecast of each dilation branch in isolation, stacked along dim 0; the spread across
+        scales is the scale-disagreement uncertainty signal. Not an additive decomposition of
+        forward(): the head is nonlinear and forward() averages the branches in latent space.
+        Requires multiscale_mode='parallel_ensemble' and eval mode (dropout off)."""
+        if self.training:
+            raise RuntimeError("forward_branches() requires eval mode (model.eval()): "
+                               "active dropout corrupts the scale-disagreement spread.")
+        with torch.no_grad():
+            u = self._embed(x)
+            return torch.stack([self._head(bl) for bl in self.stack.forward_branches(u)], dim=0)

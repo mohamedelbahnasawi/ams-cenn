@@ -1,0 +1,20 @@
+{
+ "model": "PatchTST",
+ "dataset": "Weather",
+ "horizon": 336,
+ "seed": 123,
+ "kind": "mask",
+ "level": 96,
+ "mse": 0.2744173753728894,
+ "mae": 0.318659042729021,
+ "mse_clean": 0.2528244338663513,
+ "mae_clean": 0.2940265503255005,
+ "ratio_mse": 1.0854068618935488,
+ "n_rows": 71999424,
+ "alias": "PatchTST",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "PatchTST__Weather__H336__seed123"
+ }
+}

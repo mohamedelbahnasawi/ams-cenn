@@ -1,0 +1,40 @@
+{
+  "model": "CeNN_AMS-Anc-K4",
+  "dataset": "Weather",
+  "horizon": 192,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.20893190190826674,
+  "mae": 0.2691084493597188,
+  "train_time_s": 84.0,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 206527,
+  "best_valid_loss": 0.3461902141571045,
+  "final_valid_loss": 0.3484869599342346,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "d205bd4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-09-03T02:01:54.912439+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 5270,
+    "test_size": 10539,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32,
+    "trunk_type": "cenn",
+    "cenn_K": 4,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  }
+}

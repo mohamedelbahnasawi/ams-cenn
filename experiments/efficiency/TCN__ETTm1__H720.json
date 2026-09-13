@@ -1,0 +1,20 @@
+{
+  "model": "TCN",
+  "dataset": "ETTm1",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 410897,
+  "flops_fwd": 642673920,
+  "macs_fwd": 321336960.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 118.78,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 2.2008,
+  "peak_train_mb": 117.1,
+  "peak_infer_mb": 38.3,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

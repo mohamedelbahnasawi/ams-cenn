@@ -1,0 +1,87 @@
+.ipynb_checkpoints
+__pycache__
+*.egg-info
+Gemfile*
+Gemfile.lock
+docs/_site
+build
+dist
+.vscode
+*.gif
+*.csv
+*/data/*
+*.parquet
+tmp
+_docs/
+sidebar.yml
+.DS_Store
+.gitattributes
+.gitconfig
+nbs/.last_checked
+_proc
+lightning_logs/
+/**/data/
+debug_run
+
+longhorizon/
+_old/
+data
+mlruns
+checkpoints
+nbs/_extensions/mintlify
+*.env
+.coverage*
+
+# ignore files created in the docs folder
+docs/**/*.mdx
+
+docs-scripts
+docs/mintlify/examples
+
+nbs/_extensions
+.quarto
+
+*.png
+# README assets are checked in (override the global *.png ignore)
+!assets/architecture.png
+
+.venv/
+# --- CeNN fork additions ---
+.venv/
+data/
+# per-seed result JSONs of every run reported in the paper ARE tracked:
+#   experiments/results/, experiments/efficiency/, experiments/robustness/, experiments/controls/
+!experiments/robustness/robustness_degradation.csv
+experiments/checkpoints/
+experiments/published/
+experiments/aggregated/*
+!experiments/aggregated/cell_contribution/
+experiments/artifacts/
+
+
+# local LaTeX engine (tectonic.exe) used to render TikZ figures — do not commit (49MB binary)
+experiments/.tools/
+
+# W&B local run cache (2GB; synced to cloud; never commit)
+wandb/
+
+# e2e plumbing-test scratch output (CENN_EXP_DIR)
+_e2e_scratch/
+
+# worst-case probe scratch (big-dataset OOM/timing probe)
+_probe_scratch/
+
+# control-study outputs: only the result JSONs are tracked
+experiments/controls/*/*
+!experiments/controls/*/results/
+!experiments/controls/scaler_ab/h200/
+!experiments/controls/lookback/L[0-9]*/
+experiments/controls/lookback/L[0-9]*/*
+!experiments/controls/lookback/L[0-9]*/results/
+!experiments/controls/variables/V[0-9]*/
+experiments/controls/variables/V[0-9]*/*
+!experiments/controls/variables/V[0-9]*/results/
+
+# local scratch
+*.log
+experiments/_overlay_preds/

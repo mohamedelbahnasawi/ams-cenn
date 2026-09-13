@@ -1,0 +1,20 @@
+{
+ "model": "DLinear",
+ "dataset": "Weather",
+ "horizon": 336,
+ "seed": 123,
+ "kind": "spike",
+ "level": 0.01,
+ "mse": 0.27147736704518877,
+ "mae": 0.33186043986695946,
+ "mse_clean": 0.2549942107706195,
+ "mae_clean": 0.3079198932824203,
+ "ratio_mse": 1.0646412960700378,
+ "n_rows": 71999424,
+ "alias": "DLinear",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "DLinear__Weather__H336__seed123"
+ }
+}

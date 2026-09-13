@@ -1,0 +1,20 @@
+{
+ "model": "TCN",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 123,
+ "kind": "scale",
+ "level": 0.1,
+ "mse": 0.316369972488396,
+ "mae": 0.3478887165206219,
+ "mse_clean": 0.31465841783014525,
+ "mae_clean": 0.34985180122183823,
+ "ratio_mse": 1.0054394052765327,
+ "n_rows": 148478400,
+ "alias": "TCN",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "TCN__Weather__H720__seed123"
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "model": "TCN",
+ "dataset": "Weather",
+ "horizon": 336,
+ "seed": 42,
+ "kind": "dead",
+ "level": 2,
+ "mse": 0.2880340615568859,
+ "mae": 0.33958043070449084,
+ "mse_clean": 0.24782517744039623,
+ "mae_clean": 0.2992185625739201,
+ "ratio_mse": 1.1622469699478382,
+ "n_rows": 71999424,
+ "alias": "TCN",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "TCN__Weather__H336__seed42"
+ },
+ "dead_ids": [
+  "H2OC (mmol/mol)",
+  "VPdef (mbar)"
+ ],
+ "mse_healthy": 0.25986800003740057,
+ "mse_clean_healthy": 0.25986800003740057,
+ "ratio_mse_healthy": 1.0
+}

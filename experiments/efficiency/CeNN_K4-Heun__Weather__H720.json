@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_K4-Heun",
+  "dataset": "Weather",
+  "horizon": 720,
+  "input_size": 512,
+  "n_series": 21,
+  "windows_batch_size": 32,
+  "params": 379237,
+  "flops_fwd": 63473664,
+  "macs_fwd": 31736832.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 144.714,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 9.2225,
+  "peak_train_mb": 678.8,
+  "peak_infer_mb": 38.8,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

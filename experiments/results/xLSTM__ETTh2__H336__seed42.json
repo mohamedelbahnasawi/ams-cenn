@@ -1,0 +1,33 @@
+{
+  "model": "xLSTM",
+  "dataset": "ETTh2",
+  "horizon": 336,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.8932951191555967,
+  "mae": 0.671303236650709,
+  "train_time_s": 3213.5,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 411105,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": "87fbfe4",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-12T22:56:31.593172+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 2880,
+    "test_size": 2880,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32
+  }
+}

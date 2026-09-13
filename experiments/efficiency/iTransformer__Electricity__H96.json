@@ -1,0 +1,20 @@
+{
+  "model": "iTransformer",
+  "dataset": "Electricity",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 321,
+  "windows_batch_size": 32,
+  "params": 277472,
+  "flops_fwd": 281699328,
+  "macs_fwd": 140849664.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 128.361,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 3.928,
+  "peak_train_mb": 234.8,
+  "peak_infer_mb": 41.0,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

@@ -1,0 +1,38 @@
+{
+  "model": "CeNN_FrozenSkip-TrainTrunk",
+  "dataset": "Electricity",
+  "horizon": 720,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.21679056208220515,
+  "mae": 0.3070363237134923,
+  "train_time_s": 224.2,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 786913,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "server-h200",
+    "git_commit": "fff7bb7",
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-08-22T13:07:41.177575+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "minmax",
+    "weight_decay": 0.01,
+    "val_size": 2632,
+    "test_size": 5260,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": 9,
+    "batch_size": 8,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  }
+}

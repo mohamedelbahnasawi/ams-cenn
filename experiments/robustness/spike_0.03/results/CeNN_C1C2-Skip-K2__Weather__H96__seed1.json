@@ -1,0 +1,20 @@
+{
+ "model": "CeNN_C1C2-Skip-K2",
+ "dataset": "Weather",
+ "horizon": 96,
+ "seed": 1,
+ "kind": "spike",
+ "level": 0.03,
+ "mse": 0.21040956602563313,
+ "mae": 0.289985421564596,
+ "mse_clean": 0.1669892536204926,
+ "mae_clean": 0.2315120090711255,
+ "ratio_mse": 1.2600186027767961,
+ "n_rows": 21055104,
+ "alias": "CeNN_C1C2-Skip-K2",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "CeNN_C1C2-Skip-K2__Weather__H96__seed1"
+ }
+}

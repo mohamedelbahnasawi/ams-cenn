@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cenn-forecasting"
+version = "1.0.0"
+description = "AMS-CeNN: an auditable, stability-certified cellular residual network for long-horizon multivariate time-series forecasting (PyTorch)"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [
+    {name = "Mohamed El Bahnasawi"},
+]
+keywords = ["time-series", "forecasting", "cellular-neural-network", "long-horizon", "stability", "deep-learning", "pytorch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/mohamedelbahnasawi/ams-cenn"
+Repository = "https://github.com/mohamedelbahnasawi/ams-cenn"
+Archive = "https://doi.org/10.5281/zenodo.21041026"
+Changelog = "https://github.com/mohamedelbahnasawi/ams-cenn/blob/main/cenn/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["cenn_forecasting*"]

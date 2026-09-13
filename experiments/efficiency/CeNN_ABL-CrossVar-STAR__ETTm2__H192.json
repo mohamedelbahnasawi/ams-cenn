@@ -1,0 +1,20 @@
+{
+  "model": "CeNN_ABL-CrossVar-STAR",
+  "dataset": "ETTm2",
+  "horizon": 192,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 106650,
+  "flops_fwd": 22323200,
+  "macs_fwd": 11161600.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 117.218,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 4.961,
+  "peak_train_mb": 684.8,
+  "peak_infer_mb": 37.1,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

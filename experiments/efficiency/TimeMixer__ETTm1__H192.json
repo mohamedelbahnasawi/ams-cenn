@@ -1,0 +1,20 @@
+{
+  "model": "TimeMixer",
+  "dataset": "ETTm1",
+  "horizon": 192,
+  "input_size": 512,
+  "n_series": 7,
+  "windows_batch_size": 32,
+  "params": 2284927,
+  "flops_fwd": 135704576,
+  "macs_fwd": 67852288.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 132.19,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 15.5806,
+  "peak_train_mb": 140.3,
+  "peak_infer_mb": 45.4,
+  "precision": "bf16-mixed",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

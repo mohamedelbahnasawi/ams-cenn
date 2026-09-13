@@ -1,0 +1,20 @@
+{
+ "model": "PatchTST",
+ "dataset": "Weather",
+ "horizon": 720,
+ "seed": 42,
+ "kind": "scale",
+ "level": 0.25,
+ "mse": 0.3888854548697947,
+ "mae": 0.40086973266228326,
+ "mse_clean": 0.3265820694344811,
+ "mae_clean": 0.3460387982408501,
+ "ratio_mse": 1.1907740542620724,
+ "n_rows": 148478400,
+ "alias": "PatchTST",
+ "source": "robustness",
+ "provenance": {
+  "python": "3.12.13",
+  "ckpt": "PatchTST__Weather__H720__seed42"
+ }
+}

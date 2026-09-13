@@ -1,0 +1,20 @@
+{
+  "model": "TimesNet",
+  "dataset": "Traffic",
+  "horizon": 96,
+  "input_size": 512,
+  "n_series": 862,
+  "windows_batch_size": 32,
+  "params": 1484321,
+  "flops_fwd": 6354791501824,
+  "macs_fwd": 3177395750912.0,
+  "ops_coverage": "matmul+conv (FlopCounterMode); FFT/softmax/layernorm/elementwise NOT counted",
+  "latency_ms": 2491.205,
+  "latency_ms_note": "wall-clock incl. NeuralForecast pipeline overhead; NOT model latency \u2014 use compute_ms",
+  "compute_ms": 878.8566,
+  "peak_train_mb": 232.2,
+  "peak_infer_mb": 49.1,
+  "precision": "32-true",
+  "device": "NVIDIA GeForce RTX 4090",
+  "convention": "A_full_multivariate_forecast"
+}

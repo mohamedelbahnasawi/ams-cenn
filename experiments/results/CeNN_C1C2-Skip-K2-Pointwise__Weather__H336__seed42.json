@@ -1,0 +1,38 @@
+{
+  "model": "CeNN_C1C2-Skip-K2-Pointwise",
+  "dataset": "Weather",
+  "horizon": 336,
+  "seed": 42,
+  "input_size": 512,
+  "mse": 0.2535181999018434,
+  "mae": 0.3093387678477431,
+  "train_time_s": 51.1,
+  "train_time_s_note": "wall time incl. train + stride-1 test eval (NOT training-only); use efficiency compute_ms for inference cost",
+  "params": 370869,
+  "source": "experiment",
+  "provenance": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "hostname": "workstation-rtx4090",
+    "git_commit": null,
+    "datasetsforecast": "1.0.1"
+  },
+  "timestamp": "2026-06-27T13:00:23.306749+00:00",
+  "config": {
+    "max_steps": 1000,
+    "precision": "bf16-mixed",
+    "scaler_type": "identity",
+    "weight_decay": 0.01,
+    "val_size": 5270,
+    "test_size": 10539,
+    "eval": "standard_fixed_split_stride1",
+    "cv_chunks": null,
+    "batch_size": 32,
+    "trunk_type": "cenn",
+    "cenn_K": 2,
+    "integrator": "euler",
+    "multiscale_mode": "parallel_ensemble",
+    "cross_var": "none"
+  }
+}

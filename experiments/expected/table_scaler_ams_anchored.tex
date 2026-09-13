@@ -1,0 +1,20 @@
+\begin{table}[!htbp]
+\centering
+\caption{Normalization ablation of AMS-CeNN. Seed-mean MSE per dataset (four horizons, five seeds) with the shipped in-model last-value anchor and no pipeline scaler, against the same architecture trained under the pipeline min--max scaler (identity on Weather) that the conference-era configuration used. Positive $\Delta$ = min--max \emph{hurts}. The anchor is better on five datasets and marginally worse on ETTm2 and Weather; the choice is a protocol decision, not a validation-selected one (Section~\ref{sec:results:scaler}).}
+\label{tab:scaler_ams}
+\begin{tabular}{lccc}
+\toprule
+Dataset & Anchor & Min--max & $\Delta$ \\
+\midrule
+ETTh1 & 0.350 & 0.373 & \textbf{+0.022} \\
+ETTh2 & 0.301 & 0.307 & $+0.006$ \\
+ETTm1 & 0.305 & 0.312 & $+0.008$ \\
+ETTm2 & 0.223 & 0.221 & $-0.002$ \\
+Weather & 0.237 & 0.237 & $-0.000$ \\
+Electricity & 0.169 & 0.175 & $+0.006$ \\
+Traffic & 0.346 & 0.354 & $+0.009$ \\
+\midrule
+Mean & 0.276 & 0.283 & $+0.007$ \\
+\bottomrule
+\end{tabular}
+\end{table}
