@@ -17,8 +17,9 @@ ROBUSTNESS_CSV = "experiments/robustness/robustness_degradation.csv"
 from experiments.config import CENN_MAIN_VARIANT, FIGURES_DIR  # noqa: E402
 OUT = str(FIGURES_DIR); os.makedirs(OUT, exist_ok=True)
 AMS = f"CeNN_{CENN_MAIN_VARIANT}"
-MODELS = [AMS, "DLinear", "TSMixer", "PatchTST", "TCN"]
-LABEL = {AMS: "AMS-CeNN", "DLinear": "DLinear", "TSMixer": "TSMixer",
+RES = "CeNN_SkipOnly-Anc"          # the residual alone (trained without the cellular pathway), 2026-09-14
+MODELS = [AMS, RES, "DLinear", "TSMixer", "PatchTST", "TCN"]
+LABEL = {AMS: "AMS-CeNN", RES: "residual alone", "DLinear": "DLinear", "TSMixer": "TSMixer",
          "PatchTST": "PatchTST", "TCN": "TCN"}
 # (csv key, panel title, x-axis label)
 KINDS = [("gauss", "Gaussian noise", "noise standard deviation (z-units)"),
@@ -26,7 +27,7 @@ KINDS = [("gauss", "Gaussian noise", "noise standard deviation (z-units)"),
          ("mask", "Missing blocks", "block length (steps)"),
          ("scale", "Gain error", "multiplicative gain error"),
          ("shift", "Level shift", "shift (z-units)")]
-COL = {AMS: "#E8772E", "DLinear": "#4C72B0", "TSMixer": "#55A868",
+COL = {AMS: "#E8772E", RES: "#444444", "DLinear": "#4C72B0", "TSMixer": "#55A868",
        "PatchTST": "#8172B3", "TCN": "#937860"}
 
 
@@ -55,7 +56,8 @@ def fig_robustness(data):
             levels = sorted(d)
             xs = [0.0] + levels
             ys = [1.0] + [d[l] for l in levels]   # anchor clean = ratio 1
-            ax.plot(xs, ys, marker="o", ms=3.2, lw=2.0 if m == AMS else 1.2,
+            ax.plot(xs, ys, marker="o" if m != RES else "s", ms=3.2, lw=2.0 if m == AMS else 1.2,
+                    ls="--" if m == RES else "-",
                     color=COL[m], label=LABEL[m], zorder=3 if m == AMS else 2,
                     alpha=1.0 if m == AMS else 0.85)
         ax.axhline(1.0, color="0.6", lw=0.7, ls=":")
